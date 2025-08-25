@@ -8,5 +8,23 @@
       "password": "U2FsdGVkX18NFWMK7s0DoHqexhrUfEB+uFt04UTBqBI=",
       "cellNumber": "07123456789"
     }
+  ],
+  "shoppingLists": [
+    {
+      "id": "3fda",
+      "userId": "000d",
+      "name": "Shoprite"
+    }
+  ],
+  "items": [
+    {
+      "id": "5e90",
+      "name": "Milk",
+      "quantity": 6,
+      "notes": "",
+      "category": "Groceries",
+      "image": "https://www.shutterstock.com/shutterstock/photos/1924762745/display_1500/stock-vector--d-milk-ad-template-for-product-display-milk-pack-mock-up-set-in-a-miniature-farm-with-cow-and-1924762745.jpg",
+      "shoppingListId": "3fda"
+    }
   ]
 }

@@ -1,3 +1,4 @@
+// src/components/Navbar/Navbar.tsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../redux/hooks';
@@ -11,7 +12,7 @@ const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    localStorage.removeItem('user'); 
+    localStorage.removeItem('user'); // Clear "stay logged in" data
     navigate('/login');
   };
 
@@ -27,7 +28,10 @@ const Navbar: React.FC = () => {
               <span>Hello, {user.name}</span>
             </li>
             <li>
-                <Link to="/">Home</Link>
+                <Link to="/home">Home</Link>
+            </li>
+            <li>
+              <Link to="/shopping-lists">Shopping Lists</Link>
             </li>
             <li>
               <Link to="/profile">Profile</Link>
