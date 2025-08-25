@@ -1,3 +1,12 @@
 {
-  "users": []
+  "users": [
+    {
+      "id": "000d",
+      "name": "Tlholo",
+      "surname": "Tshwane",
+      "email": "tshwane1@gmail.com",
+      "password": "U2FsdGVkX18NFWMK7s0DoHqexhrUfEB+uFt04UTBqBI=",
+      "cellNumber": "07123456789"
+    }
+  ]
 }

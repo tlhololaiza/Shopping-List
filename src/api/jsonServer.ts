@@ -1,4 +1,3 @@
-// src/api/jsonServer.ts
 import type { User, RegisterData } from '../utils/types'; // Assume you have a types file
 
 const API_BASE_URL = 'http://localhost:5000';
