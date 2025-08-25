@@ -2,6 +2,7 @@ import type { User, RegisterData, ShoppingList, ShoppingListItem } from '../util
 
 const API_BASE_URL = 'http://localhost:5000';
 
+// --- User API Functions (Existing) ---
 export const registerUser = async (userData: RegisterData): Promise<User> => {
   const response = await fetch(`${API_BASE_URL}/users`, {
     method: 'POST',
@@ -36,26 +37,23 @@ export const updateUser = async (userId: number, updatedData: Partial<User>): Pr
   });
 
   if (!response.ok) {
-    throw new Error('Failed to update user data');
+    throw new Error('Failed to update user');
   }
 
   return response.json();
 };
 
-// --- Shopping List API Functions (Full CRUD) ---
 
 // Create a new shopping list
-export const createShoppingList = async (listData: { userId: number; name: string }): Promise<ShoppingList> => {
+export const createShoppingList = async (listData: Omit<ShoppingList, 'id' | 'items'>): Promise<ShoppingList> => {
   const response = await fetch(`${API_BASE_URL}/shoppingLists`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(listData),
   });
-
   if (!response.ok) {
     throw new Error('Failed to create shopping list');
   }
-
   return response.json();
 };
 
@@ -93,9 +91,24 @@ export const createShoppingListItem = async (itemData: Omit<ShoppingListItem, 'i
 
 // Search for items by name (keyword search)
 export const searchShoppingListItems = async (userId: number, keyword: string): Promise<ShoppingListItem[]> => {
-  const response = await fetch(`${API_BASE_URL}/items?name_like=${keyword}&shoppingList.userId=${userId}`);
+  const response = await fetch(`${API_BASE_URL}/items?shoppingList.userId=${userId}&name_like=${keyword}`);
   if (!response.ok) {
     throw new Error('Failed to search for shopping list items');
   }
+  return response.json();
+};
+
+// NEW: Update a shopping list's name
+export const updateShoppingList = async (listId: number, newName: string): Promise<ShoppingList> => {
+  const response = await fetch(`${API_BASE_URL}/shoppingLists/${listId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: newName }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update shopping list');
+  }
+
   return response.json();
 };

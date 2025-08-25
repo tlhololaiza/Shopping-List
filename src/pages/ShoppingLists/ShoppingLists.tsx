@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import {
   setShoppingLists,
   addShoppingList,
   deleteShoppingList,
   addItemToShoppingList,
+  updateShoppingListName,
   setLoading,
   setError,
 } from '../../redux/shoppingListSlice';
@@ -13,14 +15,44 @@ import {
   createShoppingList,
   deleteShoppingList as deleteListApi,
   createShoppingListItem,
+  updateShoppingList as updateListApi,
+  searchShoppingListItems,
 } from '../../api/jsonServer';
 import Input from '../../components/Input/Input';
 import Button from '../../components/Button/Button';
-import type { ShoppingListItem } from '../../utils/types';
+import type { ShoppingListItem, ShoppingList } from '../../utils/types';
 import './ShoppingLists.css';
+
+// Component to render a preview of a selected image
+const ImagePreview = ({ url }: { url: string }) => {
+  const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = url;
+    img.onload = () => setImageState('loaded');
+    img.onerror = () => setImageState('error');
+  }, [url]);
+
+  return (
+    <div className="image-preview">
+      {imageState === 'loading' && <p>Loading image...</p>}
+      {imageState === 'error' && <p style={{ color: '#dc3545' }}>Failed to load image.</p>}
+      {imageState === 'loaded' && (
+        <img
+          src={url}
+          alt="Preview"
+          style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+        />
+      )}
+    </div>
+  );
+};
 
 const ShoppingLists: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { lists, isLoading, error } = useAppSelector((state) => state.shoppingList);
   const user = useAppSelector((state) => state.auth.user);
   const [newListName, setNewListName] = useState('');
@@ -31,369 +63,511 @@ const ShoppingLists: React.FC = () => {
   // Track image loading states and errors
   const [imageStates, setImageStates] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
 
+  // State for sorting and searching - initialized from URL
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortKey, setSortKey] = useState<'name' | 'category' | 'date'>('date');
+  const [editingListId, setEditingListId] = useState<number | null>(null);
+  const [editListName, setEditListName] = useState('');
+  const [searchResults, setSearchResults] = useState<ShoppingListItem[] | null>(null);
+
+  // Parse URL parameters on component mount and location change
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const searchParam = urlParams.get('search') || '';
+    const sortParam = urlParams.get('sort') as 'name' | 'category' | 'date' || 'date';
+    
+    setSearchTerm(searchParam);
+    setSortKey(sortParam);
+  }, [location.search]);
+
+  // Update URL when search term or sort key changes
+  const updateURL = (search: string, sort: string) => {
+    const params = new URLSearchParams();
+    if (search.trim()) {
+      params.set('search', search.trim());
+    }
+    if (sort !== 'date') { // Only add sort param if it's not the default
+      params.set('sort', sort);
+    }
+    
+    const newSearch = params.toString();
+    const newPath = newSearch ? `${location.pathname}?${newSearch}` : location.pathname;
+    navigate(newPath, { replace: true });
+  };
+
+  // Handle search term changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    updateURL(value, sortKey);
+  };
+
+  // Handle sort key changes
+  const handleSortChange = (sort: 'name' | 'category' | 'date') => {
+    setSortKey(sort);
+    updateURL(searchTerm, sort);
+  };
+
   // Load shopping lists with embedded items on component mount
   useEffect(() => {
     const fetchLists = async () => {
-      if (user) {
-        dispatch(setLoading(true));
-        try {
-          const fetchedLists = await getShoppingListsByUserId(user.id);
-          dispatch(setShoppingLists(fetchedLists));
-        } catch (err) {
-          dispatch(setError('Failed to fetch shopping lists.'));
-        } finally {
-          dispatch(setLoading(false));
-        }
+      if (!user?.id) return;
+      dispatch(setLoading(true));
+      dispatch(setError(null));
+      try {
+        const fetchedLists = await getShoppingListsByUserId(user.id);
+        dispatch(setShoppingLists(fetchedLists));
+      } catch (err) {
+        dispatch(setError('Failed to fetch shopping lists. Please try again.'));
+        console.error('Fetch failed:', err);
+      } finally {
+        dispatch(setLoading(false));
       }
     };
     fetchLists();
   }, [user, dispatch]);
 
-  // Initialize form data for a specific list
-  const getItemFormData = (listId: number): Omit<ShoppingListItem, 'id'> => {
-    return itemForms[listId] || {
-      name: '',
-      quantity: 1,
-      notes: '',
-      category: '',
-      image: '',
-      shoppingListId: listId,
-    };
-  };
-
-  // Handle image load states
-  const handleImageLoad = (imageUrl: string) => {
-    setImageStates(prev => ({ ...prev, [imageUrl]: 'loaded' }));
-  };
-
-  const handleImageError = (imageUrl: string) => {
-    setImageStates(prev => ({ ...prev, [imageUrl]: 'error' }));
-  };
-
-  const handleImageLoadStart = (imageUrl: string) => {
-    setImageStates(prev => ({ ...prev, [imageUrl]: 'loading' }));
-  };
-
-  // Validate image URL format
-  const isValidImageUrl = (url: string): boolean => {
-    if (!url) return true; // Empty is valid (optional)
-    try {
-      const urlObj = new URL(url);
-      return ['http:', 'https:'].includes(urlObj.protocol) && 
-             /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url);
-    } catch {
-      return false;
-    }
-  };
-
-  // Handle creating a new list
+  // Handle shopping list creation
   const handleCreateList = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newListName.trim() && user) {
-      dispatch(setLoading(true));
+    if (newListName.trim() && user?.id) {
+      const newListData = { userId: user.id, name: newListName.trim(), items: [] };
       try {
-        const newList = await createShoppingList({ userId: user.id, name: newListName });
-        dispatch(addShoppingList({ ...newList, items: [] }));
+        const createdList = await createShoppingList(newListData);
+        dispatch(addShoppingList(createdList));
         setNewListName('');
       } catch (err) {
-        dispatch(setError('Failed to create new shopping list.'));
-      } finally {
-        dispatch(setLoading(false));
+        console.error('Failed to create list:', err);
       }
     }
   };
 
-  // Handle deleting a list
+  // Handle shopping list deletion
   const handleDeleteList = async (listId: number) => {
-    if (window.confirm('Are you sure you want to delete this shopping list and all its items?')) {
-      dispatch(setLoading(true));
-      try {
-        await deleteListApi(listId);
-        dispatch(deleteShoppingList(listId));
-        // Clean up form data for this list
-        setItemForms(prev => {
-          const updated = { ...prev };
-          delete updated[listId];
-          return updated;
-        });
-      } catch (err) {
-        dispatch(setError('Failed to delete shopping list.'));
-      } finally {
-        dispatch(setLoading(false));
-      }
+    try {
+      await deleteListApi(listId);
+      dispatch(deleteShoppingList(listId));
+    } catch (err) {
+      console.error('Failed to delete list:', err);
     }
   };
 
-  // Handle item form changes
-  const handleItemFormChange = (e: React.ChangeEvent<HTMLInputElement>, listId: number) => {
-    const { name, value } = e.target;
-    const parsedValue = name === 'quantity' ? parseInt(value) || 1 : value;
-    
-    setItemForms(prev => ({
-      ...prev,
-      [listId]: {
-        ...getItemFormData(listId),
-        [name]: parsedValue,
-      }
-    }));
-  };
-
-  // Handle adding a new item to a list
-  const handleAddItem = async (e: React.FormEvent, listId: number) => {
-    e.preventDefault();
-    const formData = getItemFormData(listId);
-    
-    if (formData.name.trim()) {
-      // Validate image URL if provided
-      if (formData.image && !isValidImageUrl(formData.image)) {
-        dispatch(setError('Please enter a valid image URL (must be http/https and end with jpg, png, gif, etc.)'));
-        return;
-      }
-
-      dispatch(setLoading(true));
+  // Handle item creation for a specific list
+  const handleAddItem = async (listId: number) => {
+    const formData = itemForms[listId];
+    if (formData?.name.trim()) {
       try {
-        const newItem = await createShoppingListItem({
-          name: formData.name,
+        const newItem: Omit<ShoppingListItem, 'id'> = {
+          name: formData.name.trim(),
           quantity: formData.quantity,
-          notes: formData.notes,
           category: formData.category,
           image: formData.image,
           shoppingListId: listId,
-        });
-        dispatch(addItemToShoppingList({ listId, item: newItem }));
-        
-        // Reset form for this specific list
-        setItemForms(prev => ({
-          ...prev,
-          [listId]: {
-            name: '',
-            quantity: 1,
-            notes: '',
-            category: '',
-            image: '',
-            shoppingListId: listId,
-          }
-        }));
+          dateAdded: new Date().toISOString(),
+        };
+        const createdItem = await createShoppingListItem(newItem);
+        dispatch(addItemToShoppingList({ listId, item: createdItem }));
+        setItemForms((prev) => ({ ...prev, [listId]: { name: '', quantity: 1, category: '', image: '', shoppingListId: listId, dateAdded: '' } }));
       } catch (err) {
-        dispatch(setError('Failed to add new item.'));
-      } finally {
-        dispatch(setLoading(false));
+        console.error('Failed to add item:', err);
       }
     }
   };
 
-  // Component for rendering item images with error handling
-  const ItemImage: React.FC<{ item: ShoppingListItem }> = ({ item }) => {
-    if (!item.image) {
-      return (
-        <div className="item-image-placeholder">
-          <span>📦</span>
-        </div>
-      );
-    }
-
-    const imageState = imageStates[item.image];
-
-    return (
-      <div className="item-image-container">
-        {imageState === 'loading' && (
-          <div className="image-loading">Loading...</div>
-        )}
-        {imageState === 'error' ? (
-          <div className="image-error" title="Failed to load image">
-            <span>🖼️❌</span>
-          </div>
-        ) : (
-          <img
-            src={item.image}
-            alt={item.name}
-            className="item-image"
-            onLoad={() => handleImageLoad(item.image!)}
-            onError={() => handleImageError(item.image!)}
-            onLoadStart={() => handleImageLoadStart(item.image!)}
-            style={{
-              width: '80px',
-              height: '80px',
-              objectFit: 'cover',
-              borderRadius: '8px',
-              border: '1px solid #ddd',
-              display: imageState === 'error' ? 'none' : 'block'
-            }}
-          />
-        )}
-      </div>
-    );
+  // Handle input changes for item forms
+  const handleItemFormChange = (e: React.ChangeEvent<HTMLInputElement>, listId: number) => {
+    const { name, value } = e.target;
+    setItemForms((prev) => ({
+      ...prev,
+      [listId]: {
+        ...prev[listId],
+        [name]: name === 'quantity' ? Number(value) : value,
+        shoppingListId: listId,
+        dateAdded: prev[listId]?.dateAdded || '',
+      },
+    }));
   };
 
-  // Image URL preview component
-  const ImagePreview: React.FC<{ url: string }> = ({ url }) => {
-    if (!url || !isValidImageUrl(url)) return null;
+  // Implement search functionality with debouncing
+  useEffect(() => {
+    const handleSearch = async () => {
+      if (!user?.id) return;
+      if (searchTerm.trim() === '') {
+        setSearchResults(null);
+        return;
+      }
+      try {
+        const results = await searchShoppingListItems(user.id, searchTerm);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Search failed:', err);
+        setSearchResults([]);
+      }
+    };
+    const timerId = setTimeout(() => {
+      handleSearch();
+    }, 500); // Debounce search
+    return () => clearTimeout(timerId);
+  }, [searchTerm, user]);
 
-    return (
-      <div className="image-preview">
-        <p><small>Image Preview:</small></p>
-        <img
-          src={url}
-          alt="Preview"
-          style={{
-            width: '60px',
-            height: '60px',
-            objectFit: 'cover',
-            borderRadius: '4px',
-            border: '1px solid #ccc'
-          }}
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      </div>
-    );
+  // Handle editing a list name
+  const handleEditListSubmit = (listId: number) => async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editListName.trim() && editingListId === listId) {
+      try {
+        await updateListApi(listId, editListName.trim());
+        dispatch(updateShoppingListName({ listId, newName: editListName.trim() }));
+        setEditingListId(null);
+      } catch (err) {
+        console.error('Failed to update list name:', err);
+      }
+    }
+  };
+  
+  // Sorting function
+  const sortItems = (items: ShoppingListItem[]) => {
+    const sortedItems = [...items];
+    switch (sortKey) {
+      case 'name':
+        sortedItems.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'category':
+        sortedItems.sort((a, b) => a.category.localeCompare(b.category));
+        break;
+      case 'date':
+        sortedItems.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+        break;
+      default:
+        break;
+    }
+    return sortedItems;
+  };
+
+  // Get display text for sort options
+  const getSortDisplayText = (key: string) => {
+    switch (key) {
+      case 'name':
+        return 'Name (A-Z)';
+      case 'category':
+        return 'Category (A-Z)';
+      case 'date':
+        return 'Date Added (Newest First)';
+      default:
+        return 'Date Added (Newest First)';
+    }
   };
 
   return (
     <div className="shopping-lists-container">
-      <h2>Your Shopping Lists</h2>
-
-      {isLoading && <p>Loading...</p>}
-      {error && <p className="error-message">{error}</p>}
-
-      <div className="list-creation-form">
-        <h3>Create New List</h3>
-        <form onSubmit={handleCreateList}>
-          <Input
-            type="text"
-            name="newListName"
-            placeholder="New Shopping List Name"
-            value={newListName}
-            onChange={(e) => setNewListName(e.target.value)}
-          />
-          <Button type="submit">Add New List</Button>
-        </form>
+      <h2>My Shopping Lists</h2>
+      
+      {/* Search Input and Sort Dropdown */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+        <Input
+          type="text"
+          name="search"
+          placeholder="Search for an item..."
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+        />
+        <select 
+          value={sortKey} 
+          onChange={(e) => handleSortChange(e.target.value as 'name' | 'category' | 'date')}
+          style={{
+            padding: '12px',
+            border: '1px solid #ccc',
+            borderRadius: '5px',
+            fontSize: '16px',
+            backgroundColor: 'white',
+            cursor: 'pointer'
+          }}
+        >
+          <option value="date">{getSortDisplayText('date')}</option>
+          <option value="name">{getSortDisplayText('name')}</option>
+          <option value="category">{getSortDisplayText('category')}</option>
+        </select>
       </div>
 
-      <div className="lists-display">
-        {lists.length > 0 ? (
-          lists.map((list) => {
-            const formData = getItemFormData(list.id);
-            
-            return (
-              <div key={list.id} className="shopping-list-card">
-                <div className="list-header">
-                  <h3>{list.name}</h3>
-                  <Button 
-                    onClick={() => handleDeleteList(list.id)}
-                    className="delete-button"
-                    style={{ backgroundColor: '#dc3545', color: 'white' }}
-                  >
-                    Delete List
-                  </Button>
-                </div>
-                
-                <hr />
-                
-                <div className="items-section">
-                  <h4>Items ({list.items.length})</h4>
-                  {list.items.length > 0 ? (
-                    <div className="items-grid">
-                      {list.items.map((item) => (
-                        <div key={item.id} className="item-card">
-                          <div className="item-content">
-                            <ItemImage item={item} />
-                            <div className="item-details">
-                              <h5>{item.name}</h5>
-                              <p><strong>Quantity:</strong> {item.quantity}</p>
-                              <p><strong>Category:</strong> {item.category}</p>
-                              {item.notes && <p><strong>Notes:</strong> {item.notes}</p>}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p>No items in this list yet.</p>
-                  )}
-                </div>
-                
-                <hr />
-                
-                <div className="add-item-section">
-                  <h4>Add New Item</h4>
-                  <form onSubmit={(e) => handleAddItem(e, list.id)} className="item-form">
-                    <div className="form-row">
-                      <Input
-                        type="text"
-                        name="name"
-                        placeholder="Item Name *"
-                        value={formData.name}
-                        onChange={(e) => handleItemFormChange(e, list.id)}
-                        required
-                      />
-                      <Input
-                        type="number"
-                        name="quantity"
-                        placeholder="Quantity"
-                        value={formData.quantity.toString()}
-                        onChange={(e) => handleItemFormChange(e, list.id)}
-                        min="1"
-                      />
-                    </div>
-                    <div className="form-row">
-                      <Input
-                        type="text"
-                        name="category"
-                        placeholder="Category *"
-                        value={formData.category}
-                        onChange={(e) => handleItemFormChange(e, list.id)}
-                        required
-                      />
-                      <Input
-                        type="text"
-                        name="notes"
-                        placeholder="Notes (Optional)"
-                        value={formData.notes || ''}
-                        onChange={(e) => handleItemFormChange(e, list.id)}
-                      />
-                    </div>
-                    <div className="image-input-section">
-                      <Input
-                        type="url"
-                        name="image"
-                        placeholder="Image URL (Optional) - e.g., https://example.com/image.jpg"
-                        value={formData.image || ''}
-                        onChange={(e) => handleItemFormChange(e, list.id)}
-                        style={{
-                          borderColor: formData.image && !isValidImageUrl(formData.image) ? '#dc3545' : undefined
+      {/* URL Info Display (for debugging - remove in production) */}
+      {(searchTerm || sortKey !== 'date') && (
+        <div style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '10px', 
+          marginBottom: '20px', 
+          borderRadius: '5px',
+          fontSize: '14px',
+          color: '#6c757d'
+        }}>
+          Current URL parameters: 
+          {searchTerm && ` search="${searchTerm}"`}
+          {sortKey !== 'date' && ` sort="${sortKey}"`}
+        </div>
+      )}
+
+      {/* Main Content Area: Search Results or All Lists */}
+      {searchResults !== null ? (
+        <div className="search-results">
+          <h3>Search Results for "{searchTerm}" ({searchResults.length} items found)</h3>
+          {searchResults.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+              {sortItems(searchResults).map((item) => (
+                <div key={`${item.id}-${item.shoppingListId}`} className="item-card" style={{
+                  border: '1px solid #ddd',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  backgroundColor: '#f9f9f9'
+                }}>
+                  <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>{item.name}</h4>
+                  <p style={{ margin: '5px 0' }}><strong>Quantity:</strong> {item.quantity}</p>
+                  <p style={{ margin: '5px 0' }}><strong>Category:</strong> {item.category}</p>
+                  {item.notes && <p style={{ margin: '5px 0' }}><strong>Notes:</strong> {item.notes}</p>}
+                  <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
+                    <strong>Added:</strong> {new Date(item.dateAdded).toLocaleDateString()}
+                  </p>
+                  {item.image && (
+                    <div style={{ marginTop: '10px' }}>
+                      <img 
+                        src={item.image} 
+                        alt={item.name}
+                        style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
                         }}
                       />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              <p>No items found matching your search.</p>
+              <button 
+                onClick={() => handleSearchChange('')}
+                style={{
+                  marginTop: '10px',
+                  padding: '8px 16px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* List Creation Form */}
+          <div className="list-creation-form" style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            marginBottom: '30px' 
+          }}>
+            <h3>Create a new Shopping List</h3>
+            <form onSubmit={handleCreateList} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <Input
+                  type="text"
+                  name="newListName"
+                  placeholder="Enter new list name"
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                />
+              </div>
+              <Button onClick={() => {}} disabled={!newListName.trim()}>Create List</Button>
+            </form>
+          </div>
+
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <p>Loading lists...</p>
+            </div>
+          ) : error ? (
+            <div className="error-message" style={{ 
+              color: '#dc3545', 
+              backgroundColor: '#f8d7da', 
+              padding: '15px', 
+              borderRadius: '5px', 
+              marginBottom: '20px' 
+            }}>
+              {error}
+            </div>
+          ) : lists.length > 0 ? (
+            lists.map((list) => {
+              const sortedItems = sortItems(list.items);
+              const formData = itemForms[list.id] || { 
+                name: '', 
+                quantity: 1, 
+                category: '', 
+                image: '', 
+                shoppingListId: list.id, 
+                dateAdded: '' 
+              };
+              const isValidImageUrl = (url: string) => 
+                url && /^(http|https):\/\/.*\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url);
+              
+              return (
+                <div key={list.id} className="shopping-list-card" style={{
+                  border: '1px solid #ddd',
+                  padding: '25px',
+                  marginBottom: '30px',
+                  borderRadius: '10px',
+                  backgroundColor: '#fff',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    {editingListId === list.id ? (
+                      <form onSubmit={handleEditListSubmit(list.id)} style={{ flex: 1 }}>
+                        <Input
+                          type="text"
+                          name="editListName"
+                          value={editListName}
+                          onChange={(e) => setEditListName(e.target.value)}
+                          onBlur={handleEditListSubmit(list.id)}
+                          autoFocus
+                        />
+                      </form>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <h3 style={{ margin: 0, color: '#333' }}>{list.name}</h3>
+                        <button 
+                          onClick={() => { setEditingListId(list.id); setEditListName(list.name); }} 
+                          style={{ 
+                            padding: '4px 8px', 
+                            fontSize: '12px',
+                            backgroundColor: '#6c757d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
+                    <Button onClick={() => handleDeleteList(list.id)}>Delete List</Button>
+                  </div>
+                  
+                  <div className="item-grid" style={{ marginBottom: '25px' }}>
+                    <h4 style={{ color: '#555', marginBottom: '15px' }}>
+                      Items ({sortedItems.length}) - Sorted by {getSortDisplayText(sortKey)}
+                    </h4>
+                    {sortedItems.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+                        {sortedItems.map((item) => (
+                          <div key={item.id} className="item-card" style={{
+                            border: '1px solid #eee',
+                            padding: '15px',
+                            borderRadius: '6px',
+                            backgroundColor: '#fafafa'
+                          }}>
+                            <h5 style={{ margin: '0 0 8px 0', color: '#333' }}>{item.name}</h5>
+                            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Qty:</strong> {item.quantity}</p>
+                            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Category:</strong> {item.category}</p>
+                            {item.notes && <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Notes:</strong> {item.notes}</p>}
+                            <p style={{ margin: '4px 0', fontSize: '12px', color: '#666' }}>
+                              Added: {new Date(item.dateAdded).toLocaleDateString()}
+                            </p>
+                            {item.image && isValidImageUrl(item.image) && (
+                              <div style={{ marginTop: '8px' }}>
+                                <img 
+                                  src={item.image} 
+                                  alt={item.name}
+                                  style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ fontStyle: 'italic', color: '#666' }}>No items in this list yet.</p>
+                    )}
+                  </div>
+                  
+                  <div className="add-item-form-container" style={{
+                    backgroundColor: '#f8f9fa',
+                    padding: '20px',
+                    borderRadius: '6px'
+                  }}>
+                    <h4 style={{ marginTop: 0, color: '#555' }}>Add a new item to this list</h4>
+                    <form onSubmit={(e) => { e.preventDefault(); handleAddItem(list.id); }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                        <Input
+                          type="text"
+                          name="name"
+                          placeholder="Item name"
+                          value={formData.name}
+                          onChange={(e) => handleItemFormChange(e, list.id)}
+                        />
+                        <Input
+                          type="number"
+                          name="quantity"
+                          placeholder="Quantity"
+                          value={String(formData.quantity)}
+                          onChange={(e) => handleItemFormChange(e, list.id)}
+                        />
+                        <Input
+                          type="text"
+                          name="category"
+                          placeholder="Category"
+                          value={formData.category}
+                          onChange={(e) => handleItemFormChange(e, list.id)}
+                        />
+                        <Input
+                          type="text"
+                          name="image"
+                          placeholder="Image URL"
+                          value={formData.image}
+                          onChange={(e) => handleItemFormChange(e, list.id)}
+                        />
+                      </div>
+                      
                       {formData.image && !isValidImageUrl(formData.image) && (
-                        <p style={{ color: '#dc3545', fontSize: '0.9em', margin: '5px 0' }}>
-                          Please enter a valid image URL (must start with http/https and be a valid image format)
+                        <p style={{ color: '#dc3545', fontSize: '14px', margin: '8px 0' }}>
+                          Please enter a valid image URL (must start with http/https and end with a valid image extension)
                         </p>
                       )}
+                      
                       {formData.image && isValidImageUrl(formData.image) && (
                         <ImagePreview url={formData.image} />
                       )}
-                    </div>
-                    
-                    <div className="form-actions">
-                      <Button 
-                        type="submit" 
-                        disabled={!formData.name.trim() || (formData.image && !isValidImageUrl(formData.image))}
-                      >
-                        Add Item
-                      </Button>
-                    </div>
-                  </form>
+                      
+                      <div className="form-actions" style={{ marginTop: '15px' }}>
+                        <Button
+                          onClick={() => {}}
+                          disabled={!formData.name.trim() || (formData.image && !isValidImageUrl(formData.image))}
+                        >
+                          Add Item
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="empty-state">
-            <p>You have no shopping lists yet. Create your first one above to get started!</p>
-          </div>
-        )}
-      </div>
+              );
+            })
+          ) : (
+            <div className="empty-state" style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '10px',
+              color: '#666'
+            }}>
+              <h3 style={{ color: '#333', marginBottom: '15px' }}>No Shopping Lists Yet</h3>
+              <p>Create your first shopping list above to get started organizing your items!</p>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

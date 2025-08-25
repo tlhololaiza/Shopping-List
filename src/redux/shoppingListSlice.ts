@@ -1,7 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { ShoppingList } from '../utils/types';
-import type { ShoppingListItem } from '../utils/types';
+import type { ShoppingList, ShoppingListItem } from '../utils/types';
 
 interface ShoppingListState {
   lists: ShoppingList[];
@@ -40,6 +39,14 @@ const shoppingListSlice = createSlice({
         list.items.push(item);
       }
     },
+    // NEW: Action to update the name of a shopping list
+    updateShoppingListName: (state, action: PayloadAction<{ listId: number; newName: string }>) => {
+      const { listId, newName } = action.payload;
+      const listToUpdate = state.lists.find((list) => list.id === listId);
+      if (listToUpdate) {
+        listToUpdate.name = newName;
+      }
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
@@ -55,6 +62,7 @@ export const {
   addShoppingList,
   deleteShoppingList,
   addItemToShoppingList,
+  updateShoppingListName, // <-- Add this here
   setLoading,
   setError,
 } = shoppingListSlice.actions;
