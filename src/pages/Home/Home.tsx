@@ -1,4 +1,6 @@
+// src/pages/Home/Home.tsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAppSelector } from '../../redux/hooks';
 import './Home.css';
 
@@ -15,7 +17,7 @@ const Home: React.FC = () => {
             You can also search for items by name and sort your lists by various criteria.
           </p>
           <p>
-            To begin, click on the **Shopping Lists** link in the navigation bar to create and manage your lists.
+            To begin, click on the **Shopping Lists** link in the navigation bar or <Link to="/shopping-lists">click here</Link> to create and manage your lists.
           </p>
         </>
       ) : (
@@ -23,7 +25,7 @@ const Home: React.FC = () => {
           <h2>Welcome to the Shopping List App!</h2>
           <p>
             This app helps you create, manage, and organize your shopping lists with ease.
-            You can add items with details like quantity, notes, category, and even images.
+            You can add items with details like name, quantity, category, notes, and even images.
           </p>
           <p>
             To start organizing your shopping, please **log in** or **register** to create your account.

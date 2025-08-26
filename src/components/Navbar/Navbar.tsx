@@ -1,9 +1,9 @@
-// src/components/Navbar/Navbar.tsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../redux/hooks';
 import { logout } from '../../redux/authSlice';
 import './Navbar.css';
+import { ShoppingCart, Home, List, User, LogIn, UserPlus, LogOut } from 'lucide-react'; // Import Lucide icons
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
@@ -19,36 +19,57 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        <Link to="/">Shopping List</Link>
+        <Link to="/">
+          <ShoppingCart size={24} /> {/* Icon for logo */}
+          <span className="logo-text">Shopping List</span>
+        </Link>
       </div>
       <ul className="navbar-links">
          {isAuthenticated && user ? (
           <>
             <li>
-              <span>Hello, {user.name}</span>
+              <span className="user-greeting">
+                Hello, {user.name}
+              </span>
             </li>
             <li>
-                <Link to="/home">Home</Link>
+                <Link to="/home" className="nav-link">
+                  <Home size={16} />
+                  <span>Home</span>
+                </Link>
             </li>
             <li>
-              <Link to="/shopping-lists">Shopping Lists</Link>
+              <Link to="/shopping-lists" className="nav-link">
+                <List size={16} />
+                <span>Shopping Lists</span>
+              </Link>
             </li>
             <li>
-              <Link to="/profile">Profile</Link>
+              <Link to="/profile" className="nav-link">
+                <User size={16} />
+                <span>Profile</span>
+              </Link>
             </li>
             <li>
-              <button onClick={handleLogout} className="logout-btn">
-                Logout
+              <button onClick={handleLogout} className="logout-btn nav-link">
+                <LogOut size={16} />
+                <span>Logout</span>
               </button>
             </li>
           </>
         ) : (
           <>
             <li>
-              <Link to="/login">Login</Link>
+              <Link to="/login" className="nav-link">
+                <LogIn size={16} />
+                <span>Login</span>
+              </Link>
             </li>
             <li>
-              <Link to="/register">Register</Link>
+              <Link to="/register" className="nav-link">
+                <UserPlus size={16} />
+                <span>Register</span>
+              </Link>
             </li>
           </>
         )}
