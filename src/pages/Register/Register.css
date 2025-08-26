@@ -1,16 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f0f2f5;
+  margin: 0;
+  padding: 0;
+}
+
 .register-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 80px);
+  height: 100vh; 
   padding: 20px;
 }
 
 .register-container h2 {
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 20px;
+  font-size: 2.5rem;
+  color: rgba(45, 52, 54, 0.9); 
+  margin-bottom: 1.5rem; 
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
 .register-container form {
@@ -20,17 +31,32 @@
   width: 100%;
   max-width: 400px;
   padding: 25px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: rgba(45, 52, 54, 0.9); 
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
 }
 
 .error-message {
-  color: #d9534f;
-  background-color: #f2dede;
-  border: 1px solid #ebccd1;
+  color: #ffcccc; 
+  background-color: rgba(220, 53, 69, 0.2); 
+  border: 1px solid rgba(220, 53, 69, 0.5); 
   border-radius: 4px;
   padding: 10px;
   text-align: center;
   font-size: 0.9rem;
+}
+
+.register-container input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.register-container input::placeholder {
+  color: #ccc;
 }
