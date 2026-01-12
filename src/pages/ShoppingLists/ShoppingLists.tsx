@@ -7,6 +7,8 @@ import {
   deleteShoppingList,
   addItemToShoppingList,
   updateShoppingListName,
+  deleteItemFromShoppingList,
+  updateItemInShoppingList,
   setLoading,
   setError,
 } from '../../redux/shoppingListSlice';
@@ -16,6 +18,8 @@ import {
   deleteShoppingList as deleteListApi,
   createShoppingListItem,
   updateShoppingList as updateListApi,
+  updateShoppingListItem,
+  deleteShoppingListItem,
   searchShoppingListItems,
 } from '../../api/jsonServer';
 import Input from '../../components/Input/Input';
@@ -69,6 +73,10 @@ const ShoppingLists: React.FC = () => {
   const [editingListId, setEditingListId] = useState<number | null>(null);
   const [editListName, setEditListName] = useState('');
   const [searchResults, setSearchResults] = useState<ShoppingListItem[] | null>(null);
+  
+  // State for editing items
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingItemData, setEditingItemData] = useState<Partial<ShoppingListItem> | null>(null);
 
   // Parse URL parameters on component mount and location change
   useEffect(() => {
@@ -171,6 +179,58 @@ const ShoppingLists: React.FC = () => {
         console.error('Failed to add item:', err);
       }
     }
+  };
+
+  // Handle item deletion from a shopping list
+  const handleDeleteItem = async (listId: number, itemId: number) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        await deleteShoppingListItem(itemId);
+        dispatch(deleteItemFromShoppingList({ listId, itemId }));
+      } catch (err) {
+        console.error('Failed to delete item:', err);
+      }
+    }
+  };
+
+  // Handle item update from a shopping list
+  const handleUpdateItem = async (listId: number, itemId: number, updatedData: Partial<ShoppingListItem>) => {
+    try {
+      const updated = await updateShoppingListItem(itemId, updatedData);
+      dispatch(updateItemInShoppingList({ listId, itemId, updatedItem: updated }));
+    } catch (err) {
+      console.error('Failed to update item:', err);
+    }
+  };
+
+  // Start editing an item
+  const startEditingItem = (item: ShoppingListItem) => {
+    setEditingItemId(item.id);
+    setEditingItemData({ ...item });
+  };
+
+  // Handle editing item changes
+  const handleEditItemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditingItemData((prev) => ({
+      ...prev,
+      [name]: name === 'quantity' ? Number(value) : value,
+    }));
+  };
+
+  // Save edited item
+  const handleSaveEditedItem = async (listId: number, itemId: number) => {
+    if (editingItemData) {
+      await handleUpdateItem(listId, itemId, editingItemData);
+      setEditingItemId(null);
+      setEditingItemData(null);
+    }
+  };
+
+  // Cancel editing
+  const cancelEditingItem = () => {
+    setEditingItemId(null);
+    setEditingItemData(null);
   };
 
   // Handle input changes for item forms
@@ -316,7 +376,25 @@ const ShoppingLists: React.FC = () => {
                   borderRadius: '8px',
                   backgroundColor: '#f9f9f9'
                 }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>{item.name}</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <h4 style={{ margin: 0, color: '#333', flex: 1 }}>{item.name}</h4>
+                    <button 
+                      onClick={() => handleDeleteItem(item.shoppingListId, item.id)}
+                      style={{ 
+                        padding: '4px 8px', 
+                        fontSize: '12px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        marginLeft: '8px'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                   <p style={{ margin: '5px 0' }}><strong>Quantity:</strong> {item.quantity}</p>
                   <p style={{ margin: '5px 0' }}><strong>Category:</strong> {item.category}</p>
                   {item.notes && <p style={{ margin: '5px 0' }}><strong>Notes:</strong> {item.notes}</p>}
@@ -461,29 +539,154 @@ const ShoppingLists: React.FC = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
                         {sortedItems.map((item) => (
                           <div key={item.id} className="item-card" style={{
-                            border: '1px solid #eee',
+                            border: editingItemId === item.id ? '2px solid #007bff' : '1px solid #eee',
                             padding: '15px',
                             borderRadius: '6px',
-                            backgroundColor: '#fafafa'
+                            backgroundColor: editingItemId === item.id ? '#e7f3ff' : '#fafafa'
                           }}>
-                            <h5 style={{ margin: '0 0 8px 0', color: '#333' }}>{item.name}</h5>
-                            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Qty:</strong> {item.quantity}</p>
-                            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Category:</strong> {item.category}</p>
-                            {item.notes && <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Notes:</strong> {item.notes}</p>}
-                            <p style={{ margin: '4px 0', fontSize: '12px', color: '#666' }}>
-                              Added: {new Date(item.dateAdded).toLocaleDateString()}
-                            </p>
-                            {item.image && isValidImageUrl(item.image) && (
-                              <div style={{ marginTop: '8px' }}>
-                                <img 
-                                  src={item.image} 
-                                  alt={item.name}
-                                  style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
+                            {editingItemId === item.id && editingItemData ? (
+                              // Edit mode
+                              <div>
+                                <div style={{ marginBottom: '10px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Name</label>
+                                  <input
+                                    type="text"
+                                    name="name"
+                                    value={editingItemData.name || ''}
+                                    onChange={handleEditItemChange}
+                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                  />
+                                </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Quantity</label>
+                                  <input
+                                    type="number"
+                                    name="quantity"
+                                    value={editingItemData.quantity || 1}
+                                    onChange={handleEditItemChange}
+                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                  />
+                                </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Category</label>
+                                  <input
+                                    type="text"
+                                    name="category"
+                                    value={editingItemData.category || ''}
+                                    onChange={handleEditItemChange}
+                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                  />
+                                </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Notes</label>
+                                  <input
+                                    type="text"
+                                    name="notes"
+                                    value={editingItemData.notes || ''}
+                                    onChange={handleEditItemChange}
+                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                  />
+                                </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Image URL</label>
+                                  <input
+                                    type="text"
+                                    name="image"
+                                    value={editingItemData.image || ''}
+                                    onChange={handleEditItemChange}
+                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    onClick={() => handleSaveEditedItem(list.id, item.id)}
+                                    style={{
+                                      flex: 1,
+                                      padding: '8px',
+                                      backgroundColor: '#28a745',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={cancelEditingItem}
+                                    style={{
+                                      flex: 1,
+                                      padding: '8px',
+                                      backgroundColor: '#6c757d',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
                               </div>
+                            ) : (
+                              // View mode
+                              <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                  <h5 style={{ margin: 0, color: '#333', flex: 1 }}>{item.name}</h5>
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button 
+                                      onClick={() => startEditingItem(item)}
+                                      style={{ 
+                                        padding: '4px 8px', 
+                                        fontSize: '12px',
+                                        backgroundColor: '#007bff',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteItem(list.id, item.id)}
+                                      style={{ 
+                                        padding: '4px 8px', 
+                                        fontSize: '12px',
+                                        backgroundColor: '#dc3545',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                                <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Qty:</strong> {item.quantity}</p>
+                                <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Category:</strong> {item.category}</p>
+                                {item.notes && <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Notes:</strong> {item.notes}</p>}
+                                <p style={{ margin: '4px 0', fontSize: '12px', color: '#666' }}>
+                                  Added: {new Date(item.dateAdded).toLocaleDateString()}
+                                </p>
+                                {item.image && isValidImageUrl(item.image) && (
+                                  <div style={{ marginTop: '8px' }}>
+                                    <img 
+                                      src={item.image} 
+                                      alt={item.name}
+                                      style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         ))}

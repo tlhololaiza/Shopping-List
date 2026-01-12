@@ -28,6 +28,7 @@ export interface ShoppingListItem {
   category: string;
   image?: string; // URL to the image
   shoppingListId: number; // Foreign key to the parent list
+  dateAdded: string; // ISO format date string
 }
 
 // Defines the data structure for a shopping list

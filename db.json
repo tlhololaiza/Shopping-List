@@ -7,24 +7,33 @@
       "email": "tshwane1@gmail.com",
       "password": "U2FsdGVkX18NFWMK7s0DoHqexhrUfEB+uFt04UTBqBI=",
       "cellNumber": "07123456789"
+    },
+    {
+      "id": "a36c",
+      "name": "Ofentse",
+      "surname": "Tutje",
+      "email": "tsetse@gmail.com",
+      "password": "U2FsdGVkX19184Me077pdPY7tRw3h611cDWVS/jp6Ko=",
+      "cellNumber": "07123456789"
     }
   ],
   "shoppingLists": [
     {
-      "id": "3fda",
+      "id": "fb54",
       "userId": "000d",
-      "name": "Shoprite"
+      "name": "Pep",
+      "items": []
     }
   ],
   "items": [
     {
-      "id": "5e90",
-      "name": "Milk",
-      "quantity": 6,
-      "notes": "",
-      "category": "Groceries",
-      "image": "https://www.shutterstock.com/shutterstock/photos/1924762745/display_1500/stock-vector--d-milk-ad-template-for-product-display-milk-pack-mock-up-set-in-a-miniature-farm-with-cow-and-1924762745.jpg",
-      "shoppingListId": "3fda"
+      "id": "7ce0",
+      "name": "Charger",
+      "quantity": 1,
+      "category": "Electronic",
+      "image": "https://www.pepstores.com/cdn/shop/files/DFQ62-1_web_PNG.png?v=1741022484&width=713",
+      "shoppingListId": "fb54",
+      "dateAdded": "2025-08-26T09:54:49.583Z"
     }
   ]
 }

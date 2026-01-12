@@ -47,6 +47,25 @@ const shoppingListSlice = createSlice({
         listToUpdate.name = newName;
       }
     },
+    // Action to delete an item from a shopping list
+    deleteItemFromShoppingList: (state, action: PayloadAction<{ listId: number; itemId: number }>) => {
+      const { listId, itemId } = action.payload;
+      const list = state.lists.find((l) => l.id === listId);
+      if (list) {
+        list.items = list.items.filter((item) => item.id !== itemId);
+      }
+    },
+    // Action to update an item in a shopping list
+    updateItemInShoppingList: (state, action: PayloadAction<{ listId: number; itemId: number; updatedItem: Partial<ShoppingListItem> }>) => {
+      const { listId, itemId, updatedItem } = action.payload;
+      const list = state.lists.find((l) => l.id === listId);
+      if (list) {
+        const item = list.items.find((i) => i.id === itemId);
+        if (item) {
+          Object.assign(item, updatedItem);
+        }
+      }
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
@@ -62,7 +81,9 @@ export const {
   addShoppingList,
   deleteShoppingList,
   addItemToShoppingList,
-  updateShoppingListName, // <-- Add this here
+  updateShoppingListName,
+  deleteItemFromShoppingList,
+  updateItemInShoppingList,
   setLoading,
   setError,
 } = shoppingListSlice.actions;

@@ -112,3 +112,29 @@ export const updateShoppingList = async (listId: number, newName: string): Promi
 
   return response.json();
 };
+
+// Update a shopping list item
+export const updateShoppingListItem = async (itemId: number, updatedData: Partial<ShoppingListItem>): Promise<ShoppingListItem> => {
+  const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updatedData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update shopping list item');
+  }
+
+  return response.json();
+};
+
+// Delete a shopping list item
+export const deleteShoppingListItem = async (itemId: number): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete shopping list item');
+  }
+};
