@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../redux/hooks';
 import { logout } from '../../redux/authSlice';
+import Button from '../Button/Button';
 import './Navbar.css';
 import { ShoppingCart, Home, List, User, LogIn, UserPlus, LogOut } from 'lucide-react'; // Import Lucide icons
 
@@ -51,10 +52,10 @@ const Navbar: React.FC = () => {
               </Link>
             </li>
             <li>
-              <button onClick={handleLogout} className="logout-btn">
+              <Button onClick={handleLogout} className="logout-btn">
                 <LogOut size={16} />
                 <span>Logout</span>
-              </button>
+              </Button>
             </li>
           </>
         ) : (

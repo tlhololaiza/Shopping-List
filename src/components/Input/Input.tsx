@@ -7,9 +7,21 @@ interface InputProps {
   placeholder: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
 }
 
-const Input: React.FC<InputProps> = ({ type, name, placeholder, value, onChange }) => {
+const Input: React.FC<InputProps> = ({ 
+  type, 
+  name, 
+  placeholder, 
+  value, 
+  onChange,
+  required = false,
+  disabled = false,
+  className = ''
+}) => {
   return (
     <input
       type={type}
@@ -17,7 +29,9 @@ const Input: React.FC<InputProps> = ({ type, name, placeholder, value, onChange 
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="custom-input"
+      required={required}
+      disabled={disabled}
+      className={`custom-input ${className}`}
     />
   );
 };

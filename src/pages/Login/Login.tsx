@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { login } from '../../redux/authSlice';
 import { getUserByEmail } from '../../api/jsonServer';
 import { decryptData } from '../../utils/encryption';
 import { validateLogin } from '../../utils/validation';
-import Input from '../../components/Input/Input';
+import { ShoppingCart, Mail, Lock } from 'lucide-react';
 import Button from '../../components/Button/Button';
+import Input from '../../components/Input/Input';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -56,25 +57,46 @@ const Login: React.FC = () => {
 
   return (
     <div className="login-container">
-      <h2>Log In</h2>
-      <form onSubmit={handleLogin}>
-        <Input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && <p className="error-message">{error}</p>}
-        <Button onClick={() => {}}>Log In</Button>
-      </form>
+      <div className="login-card">
+        <div className="login-icon">
+          <ShoppingCart size={40} />
+        </div>
+        <h2>Welcome back</h2>
+        <p className="login-subtitle">Sign in to manage your shopping lists</p>
+        {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <label>Email address</label>
+            <div className="input-wrapper">
+              <Mail className="input-icon" size={18} />
+              <Input
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <div className="input-wrapper">
+              <Lock className="input-icon" size={18} />
+              <Input
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button type="submit">Sign in</Button>
+        </form>
+        <div className="login-footer">
+          Don't have an account? <Link to="/register">Create one</Link>
+        </div>
+      </div>
     </div>
   );
 };

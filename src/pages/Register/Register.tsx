@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../../api/jsonServer';
 import { encryptData } from '../../utils/encryption';
 import { validateRegistration } from '../../utils/validation';
 import type { RegisterData } from '../../utils/types';
-import Input from '../../components/Input/Input';
+import { ShoppingCart, User, Mail, Lock, Phone } from 'lucide-react';
 import Button from '../../components/Button/Button';
+import Input from '../../components/Input/Input';
 import './Register.css';
 
 const Register: React.FC = () => {
@@ -58,53 +59,72 @@ const Register: React.FC = () => {
 
   return (
     <div className="register-container">
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <Input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-        />
-        <Input
-          type="text"
-          name="surname"
-          placeholder="Surname"
-          value={formData.surname}
-          onChange={handleChange}
-        />
-        <Input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <Input
-          type="password"
-          name="password"
-          placeholder="Password (min 6 characters)"
-          value={formData.password}
-          onChange={handleChange}
-        />
-        <Input
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={handleConfirmPasswordChange}
-        />
-        <Input
-          type="tel"
-          name="cellNumber"
-          placeholder="Cell Number"
-          value={formData.cellNumber}
-          onChange={handleChange}
-        />
-        {error && <p className="error-message">{error}</p>}
-        <Button onClick={() => {}}>Register</Button>
-      </form>
+      <div className="register-card">
+        <div className="register-icon">
+          <ShoppingCart size={40} />
+        </div>
+        <h2>Create account</h2>
+        <p className="register-subtitle">Start organizing your shopping today</p>
+        {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Full name</label>
+            <div className="input-wrapper">
+              <User className="input-icon" size={18} />
+              <Input
+                type="text"
+                name="name"
+                placeholder="John Doe"
+                value={formData.name}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Email address</label>
+            <div className="input-wrapper">
+              <Mail className="input-icon" size={18} />
+              <Input
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <div className="input-wrapper">
+              <Lock className="input-icon" size={18} />
+              <Input
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Confirm password</label>
+            <div className="input-wrapper">
+              <Lock className="input-icon" size={18} />
+              <Input
+                type="password"
+                name="confirmPassword"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={handleConfirmPasswordChange}
+              />
+            </div>
+          </div>
+          <Button type="submit">Create account</Button>
+        </form>
+        <div className="register-footer">
+          Already have an account? <Link to="/login">Sign in</Link>
+        </div>
+      </div>
     </div>
   );
 };

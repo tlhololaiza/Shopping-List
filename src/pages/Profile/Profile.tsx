@@ -4,8 +4,9 @@ import { updateUser, getUserByEmail } from '../../api/jsonServer';
 import { login } from '../../redux/authSlice';
 import { encryptData } from '../../utils/encryption';
 import { validateProfileUpdate } from '../../utils/validation';
-import Input from '../../components/Input/Input';
+import { User as UserIcon, Mail, Lock } from 'lucide-react';
 import Button from '../../components/Button/Button';
+import Input from '../../components/Input/Input';
 import type { User } from '../../utils/types';
 import './Profile.css';
 
@@ -17,7 +18,6 @@ const Profile: React.FC = () => {
     name: '',
     surname: '',
     email: '',
-    cellNumber: '',
   });
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -40,7 +40,6 @@ const Profile: React.FC = () => {
         name: user.name,
         surname: user.surname,
         email: user.email,
-        cellNumber: user.cellNumber,
       });
     }
   }, [user]);
@@ -111,61 +110,81 @@ const Profile: React.FC = () => {
 
   return (
     <div className="profile-container">
-      <h2>Profile</h2>
-      {user ? (
-        <form onSubmit={handleUpdate}>
-          <Input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={formData.name || ''}
-            onChange={handleChange}
-          />
-          <Input
-            type="text"
-            name="surname"
-            placeholder="Surname"
-            value={formData.surname || ''}
-            onChange={handleChange}
-          />
-          <Input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email || ''}
-            onChange={handleChange}
-          />
-          <Input
-            type="tel"
-            name="cellNumber"
-            placeholder="Cell Number"
-            value={formData.cellNumber || ''}
-            onChange={handleChange}
-          />
-          <hr />
-          <p>Update Password (optional)</p>
-          <Input
-            type="password"
-            name="password"
-            placeholder="New Password (min 6 characters)"
-            value={password}
-            onChange={handlePasswordChange}
-          />
-          <Input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm New Password"
-            value={confirmPassword}
-            onChange={handleConfirmPasswordChange}
-            className={!passwordsMatch ? 'highlight-mismatch' : ''}
-          />
-          {error && <p className="error-message">{error}</p>}
-          {success && <p className="success-message">{success}</p>}
-          <Button onClick={() => {}}>Update Profile</Button>
-        </form>
-      ) : (
-        <p>Loading profile data...</p>
-      )}
+      <div className="profile-card">
+        <div className="profile-icon">
+          <UserIcon size={40} />
+        </div>
+        <h2>Profile</h2>
+        <p className="profile-subtitle">Update your account information</p>
+        {user ? (
+          <>
+            {error && <div className="error-message">{error}</div>}
+            {success && <div className="success-message">{success}</div>}
+            <form onSubmit={handleUpdate}>
+              <div className="form-group">
+                <label>Name</label>
+                <div className="input-wrapper">
+                  <UserIcon className="input-icon" size={18} />
+                  <Input
+                    type="text"
+                    name="name"
+                    placeholder="John Doe"
+                    value={formData.name || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Email address</label>
+                <div className="input-wrapper">
+                  <Mail className="input-icon" size={18} />
+                  <Input
+                    type="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value={formData.email || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+              <hr />
+              <h3 className="section-title">Change Password (optional)</h3>
+              <div className="form-group">
+                <label>New password</label>
+                <div className="input-wrapper">
+                  <Lock className="input-icon" size={18} />
+                  <Input
+                    type="password"
+                    name="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={handlePasswordChange}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Confirm new password</label>
+                <div className="input-wrapper">
+                  <Lock className="input-icon" size={18} />
+                  <Input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={handleConfirmPasswordChange}
+                  />
+                </div>
+              </div>
+              {!passwordsMatch && confirmPassword && (
+                <p className="highlight-mismatch">Passwords do not match</p>
+              )}
+              <Button type="submit">Update Profile</Button>
+            </form>
+          </>
+        ) : (
+          <p>Loading profile data...</p>
+        )}
+      </div>
     </div>
   );
 };
