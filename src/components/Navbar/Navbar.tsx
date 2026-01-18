@@ -20,8 +20,8 @@ const Navbar: React.FC = () => {
     <nav className="navbar">
       <div className="navbar-logo">
         <Link to="/">
-          <ShoppingCart size={24} /> {/* Icon for logo */}
-          <span className="logo-text">Shopping List</span>
+          <ShoppingCart size={24} />
+          <span className="logo-text">ShopList</span>
         </Link>
       </div>
       <ul className="navbar-links">
@@ -51,7 +51,7 @@ const Navbar: React.FC = () => {
               </Link>
             </li>
             <li>
-              <button onClick={handleLogout} className="logout-btn nav-link">
+              <button onClick={handleLogout} className="logout-btn">
                 <LogOut size={16} />
                 <span>Logout</span>
               </button>
@@ -60,15 +60,13 @@ const Navbar: React.FC = () => {
         ) : (
           <>
             <li>
-              <Link to="/login" className="nav-link">
-                <LogIn size={16} />
-                <span>Login</span>
+              <Link to="/login" className="nav-link-text">
+                Login
               </Link>
             </li>
             <li>
-              <Link to="/register" className="nav-link">
-                <UserPlus size={16} />
-                <span>Register</span>
+              <Link to="/register" className="nav-btn-primary">
+                Get Started
               </Link>
             </li>
           </>
