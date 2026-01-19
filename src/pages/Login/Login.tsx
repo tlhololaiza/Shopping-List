@@ -8,22 +8,21 @@ import { validateLogin } from '../../utils/validation';
 import { ShoppingCart, Mail, Lock } from 'lucide-react';
 import Button from '../../components/Button/Button';
 import Input from '../../components/Input/Input';
+import { toast } from 'react-toastify';
 import './Login.css';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
 
     const validationResult = validateLogin(email, password);
     if (!validationResult.isValid) {
-      setError(validationResult.message);
+      toast.error(validationResult.message);
       return;
     }
 
@@ -31,14 +30,14 @@ const Login: React.FC = () => {
       const user = await getUserByEmail(email);
 
       if (!user) {
-        setError('User not found. Please register.');
+        toast.error('User not found. Please register.');
         return;
       }
 
       // Decrypt the password from the database and compare
       const decryptedPassword = decryptData(user.password as string);
       if (decryptedPassword !== password) {
-        setError('Invalid credentials.');
+        toast.error('Invalid credentials.');
         return;
       }
 
@@ -47,10 +46,11 @@ const Login: React.FC = () => {
 
       // Dispatch the login action with user data
       dispatch(login(user));
+      toast.success('Login successful!');
       navigate('/'); // Correctly redirects to the home page
 
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      toast.error('An error occurred. Please try again.');
       console.error(err);
     }
   };
@@ -63,7 +63,6 @@ const Login: React.FC = () => {
         </div>
         <h2>Welcome back</h2>
         <p className="login-subtitle">Sign in to manage your shopping lists</p>
-        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleLogin}>
           <div className="form-group">
             <label>Email address</label>
@@ -72,7 +71,7 @@ const Login: React.FC = () => {
               <Input
                 type="email"
                 name="email"
-                placeholder="you@example.com"
+                placeholder="your@mail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

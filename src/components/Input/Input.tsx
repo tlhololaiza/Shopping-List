@@ -13,6 +13,7 @@ interface InputProps {
   onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
   autoFocus?: boolean;
   min?: string;
+  error?: boolean;
 }
 
 const Input: React.FC<InputProps> = ({ 
@@ -26,7 +27,8 @@ const Input: React.FC<InputProps> = ({
   className = '',
   onBlur,
   autoFocus = false,
-  min
+  min,
+  error = false
 }) => {
   return (
     <input
@@ -37,10 +39,11 @@ const Input: React.FC<InputProps> = ({
       onChange={onChange}
       required={required}
       disabled={disabled}
-      className={`custom-input ${className}`}
+      className={`custom-input ${className}${error ? ' input-error' : ''}`}
       onBlur={onBlur}
       autoFocus={autoFocus}
       min={min}
+      style={error ? { borderColor: '#dc3545', boxShadow: '0 0 0 3px rgba(220, 53, 69, 0.1)' } : {}}
     />
   );
 };

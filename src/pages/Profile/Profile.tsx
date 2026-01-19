@@ -8,6 +8,7 @@ import { User as UserIcon, Mail, Lock } from 'lucide-react';
 import Button from '../../components/Button/Button';
 import Input from '../../components/Input/Input';
 import type { User } from '../../utils/types';
+import { toast } from 'react-toastify';
 import './Profile.css';
 
 const Profile: React.FC = () => {
@@ -21,8 +22,6 @@ const Profile: React.FC = () => {
   });
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const [passwordsMatch, setPasswordsMatch] = useState(true);
 
@@ -59,11 +58,9 @@ const Profile: React.FC = () => {
 
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!user) {
-      setError('User data not found.');
+      toast.error('User data not found.');
       return;
     }
 
@@ -74,7 +71,7 @@ const Profile: React.FC = () => {
     });
     
     if (!validationResult.isValid) {
-      setError(validationResult.message);
+      toast.error(validationResult.message);
       return;
     }
 
@@ -83,7 +80,7 @@ const Profile: React.FC = () => {
       if (formData.email !== user.email) {
         const existingUser = await getUserByEmail(formData.email as string);
         if (existingUser && existingUser.id !== user.id) {
-          setError('This email is already taken.');
+          toast.error('This email is already taken.');
           return;
         }
       }
@@ -98,12 +95,12 @@ const Profile: React.FC = () => {
       
       dispatch(login(updatedUser));
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      setSuccess('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
       setPassword('');
       setConfirmPassword('');
 
     } catch (err) {
-      setError('Failed to update profile.');
+      toast.error('Failed to update profile.');
       console.error(err);
     }
   };
@@ -118,8 +115,6 @@ const Profile: React.FC = () => {
         <p className="profile-subtitle">Update your account information</p>
         {user ? (
           <>
-            {error && <div className="error-message">{error}</div>}
-            {success && <div className="success-message">{success}</div>}
             <form onSubmit={handleUpdate}>
               <div className="form-group">
                 <label>Name</label>
@@ -128,8 +123,21 @@ const Profile: React.FC = () => {
                   <Input
                     type="text"
                     name="name"
-                    placeholder="John Doe"
+                    placeholder="John"
                     value={formData.name || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Surname</label>
+                <div className="input-wrapper">
+                  <UserIcon className="input-icon" size={18} />
+                  <Input
+                    type="text"
+                    name="surname"
+                    placeholder="Doe"
+                    value={formData.surname || ''}
                     onChange={handleChange}
                   />
                 </div>

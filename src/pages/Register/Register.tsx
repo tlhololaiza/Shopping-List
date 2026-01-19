@@ -7,6 +7,7 @@ import type { RegisterData } from '../../utils/types';
 import { ShoppingCart, User, Mail, Lock } from 'lucide-react';
 import Button from '../../components/Button/Button';
 import Input from '../../components/Input/Input';
+import { toast } from 'react-toastify';
 import './Register.css';
 
 const Register: React.FC = () => {
@@ -17,7 +18,6 @@ const Register: React.FC = () => {
     password: '',
   });
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,27 +31,26 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
 
     const validationResult = validateRegistration(formData);
     if (!validationResult.isValid) {
-      setError(validationResult.message);
+      toast.error(validationResult.message);
       return;
     }
 
     if (formData.password !== confirmPassword) {
-      setError('Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
 
     try {
       const encryptedData = { ...formData, password: encryptData(formData.password) };
       await registerUser(encryptedData);
-      alert('Registration successful! You can now log in.');
+      toast.success('Registration successful! You can now log in.');
       navigate('/home'); 
 
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      toast.error('An error occurred. Please try again.');
       console.error(err);
     }
   };
@@ -64,17 +63,29 @@ const Register: React.FC = () => {
         </div>
         <h2>Create account</h2>
         <p className="register-subtitle">Start organizing your shopping today</p>
-        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Full name</label>
+            <label>Name</label>
             <div className="input-wrapper">
               <User className="input-icon" size={18} />
               <Input
                 type="text"
                 name="name"
-                placeholder="John Doe"
+                placeholder="Name"
                 value={formData.name}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Surname</label>
+            <div className="input-wrapper">
+              <User className="input-icon" size={18} />
+              <Input
+                type="text"
+                name="surname"
+                placeholder="Surname"
+                value={formData.surname}
                 onChange={handleChange}
               />
             </div>
@@ -86,7 +97,7 @@ const Register: React.FC = () => {
               <Input
                 type="email"
                 name="email"
-                placeholder="you@example.com"
+                placeholder="your@mail.com"
                 value={formData.email}
                 onChange={handleChange}
               />
