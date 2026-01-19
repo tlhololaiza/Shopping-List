@@ -5,28 +5,16 @@
       "name": "Tlholo",
       "surname": "Tshwane",
       "email": "tshwane1@gmail.com",
-      "password": "U2FsdGVkX1+hmwALXV4zVFIjAxhh8cuS/GxUTLV6g8k=",
-      "cellNumber": "07123456789"
+      "password": "U2FsdGVkX1+hmwALXV4zVFIjAxhh8cuS/GxUTLV6g8k="
     },
     {
       "id": "a36c",
       "name": "Ofentse",
       "surname": "Tutje",
       "email": "tsetse@gmail.com",
-      "password": "U2FsdGVkX19184Me077pdPY7tRw3h611cDWVS/jp6Ko=",
-      "cellNumber": "07123456789"
+      "password": "U2FsdGVkX19184Me077pdPY7tRw3h611cDWVS/jp6Ko="
     }
   ],
   "shoppingLists": [],
-  "items": [
-    {
-      "id": "7ce0",
-      "name": "Charger",
-      "quantity": 1,
-      "category": "Electronic",
-      "image": "https://www.pepstores.com/cdn/shop/files/DFQ62-1_web_PNG.png?v=1741022484&width=713",
-      "shoppingListId": null,
-      "dateAdded": "2025-08-26T09:54:49.583Z"
-    }
-  ]
+  "items": []
 }

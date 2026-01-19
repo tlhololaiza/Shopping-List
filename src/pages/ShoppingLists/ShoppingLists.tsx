@@ -27,6 +27,10 @@ import Button from '../../components/Button/Button';
 import type { ShoppingListItem, ShoppingList } from '../../utils/types';
 import './ShoppingLists.css';
 
+type DeleteTarget =
+  | { type: 'list'; listId: number; name: string }
+  | { type: 'item'; listId: number; itemId: number; name: string };
+
 // Component to render a preview of a selected image
 const ImagePreview = ({ url }: { url: string }) => {
   const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -77,6 +81,10 @@ const ShoppingLists: React.FC = () => {
   // State for editing items
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editingItemData, setEditingItemData] = useState<Partial<ShoppingListItem> | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<DeleteTarget | null>(null);
+  
+  // State for add item form visibility per list
+  const [addItemFormVisibleListId, setAddItemFormVisibleListId] = useState<number | null>(null);
 
   // Parse URL parameters on component mount and location change
   useEffect(() => {
@@ -149,14 +157,9 @@ const ShoppingLists: React.FC = () => {
     }
   };
 
-  // Handle shopping list deletion
-  const handleDeleteList = async (listId: number) => {
-    try {
-      await deleteListApi(listId);
-      dispatch(deleteShoppingList(listId));
-    } catch (err) {
-      console.error('Failed to delete list:', err);
-    }
+  // Handle shopping list deletion (deferred until confirmed)
+  const handleDeleteList = (listId: number, name: string) => {
+    setConfirmDelete({ type: 'list', listId, name });
   };
 
   // Handle item creation for a specific list
@@ -169,27 +172,38 @@ const ShoppingLists: React.FC = () => {
           quantity: formData.quantity,
           category: formData.category,
           image: formData.image,
+          notes: formData.notes,
           shoppingListId: listId,
           dateAdded: new Date().toISOString(),
         };
         const createdItem = await createShoppingListItem(newItem);
         dispatch(addItemToShoppingList({ listId, item: createdItem }));
-        setItemForms((prev) => ({ ...prev, [listId]: { name: '', quantity: 1, category: '', image: '', shoppingListId: listId, dateAdded: '' } }));
+        setItemForms((prev) => ({ ...prev, [listId]: { name: '', quantity: 1, category: '', image: '', notes: '', shoppingListId: listId, dateAdded: '' } }));
       } catch (err) {
         console.error('Failed to add item:', err);
       }
     }
   };
 
-  // Handle item deletion from a shopping list
-  const handleDeleteItem = async (listId: number, itemId: number) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        await deleteShoppingListItem(itemId);
-        dispatch(deleteItemFromShoppingList({ listId, itemId }));
-      } catch (err) {
-        console.error('Failed to delete item:', err);
+  // Handle item deletion from a shopping list (deferred until confirmed)
+  const handleDeleteItem = (listId: number, itemId: number, name: string) => {
+    setConfirmDelete({ type: 'item', listId, itemId, name });
+  };
+
+  const performDelete = async () => {
+    if (!confirmDelete) return;
+    try {
+      if (confirmDelete.type === 'list') {
+        await deleteListApi(confirmDelete.listId);
+        dispatch(deleteShoppingList(confirmDelete.listId));
+      } else {
+        await deleteShoppingListItem(confirmDelete.itemId);
+        dispatch(deleteItemFromShoppingList({ listId: confirmDelete.listId, itemId: confirmDelete.itemId }));
       }
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    } finally {
+      setConfirmDelete(null);
     }
   };
 
@@ -270,8 +284,7 @@ const ShoppingLists: React.FC = () => {
   }, [searchTerm, user]);
 
   // Handle editing a list name
-  const handleEditListSubmit = (listId: number) => async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditListSubmit = async (listId: number) => {
     if (editListName.trim() && editingListId === listId) {
       try {
         await updateListApi(listId, editListName.trim());
@@ -318,27 +331,115 @@ const ShoppingLists: React.FC = () => {
 
   return (
     <div className="shopping-lists-container">
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '420px',
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+              padding: '24px',
+            }}
+          >
+            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '22px' }}>⚠️</span>
+              <h3 style={{ margin: 0, fontSize: '18px', color: '#111827', fontWeight: 700 }}>Confirm delete</h3>
+            </div>
+            <p style={{ margin: '0 0 6px 0', color: '#4b5563', fontSize: '14px' }}>
+              {confirmDelete.type === 'list'
+                ? 'This will remove the list and all its items.'
+                : 'This will remove the item from this list.'}
+            </p>
+            <p style={{ margin: '0 0 16px 0', color: '#111827', fontSize: '15px', fontWeight: 600 }}>
+              {confirmDelete.name}
+            </p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <Button
+                onClick={() => setConfirmDelete(null)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#e5e7eb',
+                  color: '#111827',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={performDelete}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h2>My Shopping Lists</h2>
       
       {/* Search Input and Sort Dropdown */}
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-        <Input
-          type="text"
-          name="search"
-          placeholder="Search for an item..."
-          value={searchTerm}
-          onChange={(e) => handleSearchChange(e.target.value)}
-        />
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ flex: 1 }}>
+          <Input
+            type="text"
+            name="search"
+            placeholder="Search for an item..."
+            value={searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+        </div>
         <select 
           value={sortKey} 
           onChange={(e) => handleSortChange(e.target.value as 'name' | 'category' | 'date')}
           style={{
-            padding: '12px',
-            border: '1px solid #ccc',
-            borderRadius: '5px',
-            fontSize: '16px',
+            padding: '12px 16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '15px',
             backgroundColor: 'white',
-            cursor: 'pointer'
+            color: '#1f2937',
+            cursor: 'pointer',
+            fontFamily: 'Poppins, sans-serif',
+            fontWeight: '500',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+            minWidth: '180px'
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = '#10b981';
+            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = '#e5e7eb';
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
           }}
         >
           <option value="date">{getSortDisplayText('date')}</option>
@@ -366,73 +467,183 @@ const ShoppingLists: React.FC = () => {
       {/* Main Content Area: Search Results or All Lists */}
       {searchResults !== null ? (
         <div className="search-results">
-          <h3>Search Results for "{searchTerm}" ({searchResults.length} items found)</h3>
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ margin: '0 0 8px 0', color: '#1f2937', fontSize: '20px', fontWeight: '600' }}>
+              Search Results
+            </h3>
+            <p style={{ margin: '0', color: '#6b7280', fontSize: '14px' }}>
+              Found {searchResults.length} item{searchResults.length !== 1 ? 's' : ''} matching "{searchTerm}"
+            </p>
+          </div>
           {searchResults.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-              {sortItems(searchResults).map((item) => (
-                <div key={`${item.id}-${item.shoppingListId}`} className="item-card" style={{
-                  border: '1px solid #ddd',
-                  padding: '15px',
-                  borderRadius: '8px',
-                  backgroundColor: '#f9f9f9'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                    <h4 style={{ margin: 0, color: '#333', flex: 1 }}>{item.name}</h4>
-                    <button 
-                      onClick={() => handleDeleteItem(item.shoppingListId, item.id)}
-                      style={{ 
-                        padding: '4px 8px', 
-                        fontSize: '12px',
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        marginLeft: '8px'
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+              {sortItems(searchResults).map((item) => {
+                const list = lists.find((l) => l.id === item.shoppingListId);
+                return (
+                  <div
+                    key={`${item.id}-${item.shoppingListId}`}
+                    className="search-result-card"
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      padding: '16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#ffffff',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                    }}
+                  >
+                    {/* List Badge */}
+                    {list && (
+                      <div style={{ marginBottom: '12px' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            backgroundColor: '#e0e7ff',
+                            color: '#4f46e5',
+                            padding: '4px 12px',
+                            borderRadius: '16px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                          }}
+                        >
+                          📋 {list.name}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Item Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <h4
+                        style={{
+                          margin: '0',
+                          color: '#111827',
+                          fontSize: '15px',
+                          fontWeight: '600',
+                          flex: 1,
+                          paddingRight: '8px',
+                        }}
+                      >
+                        {item.name}
+                      </h4>
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        <Button
+                          onClick={() => handleDeleteItem(item.shoppingListId, item.id, item.name)}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Item Details */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px' }}>
+                        <p style={{ margin: '0', fontSize: '11px', color: '#6b7280', fontWeight: '500', marginBottom: '4px' }}>QUANTITY</p>
+                        <p style={{ margin: '0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{item.quantity}</p>
+                      </div>
+                      <div style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px' }}>
+                        <p style={{ margin: '0', fontSize: '11px', color: '#6b7280', fontWeight: '500', marginBottom: '4px' }}>CATEGORY</p>
+                        <p style={{ margin: '0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{item.category || '—'}</p>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    {item.notes && (
+                      <div style={{ marginBottom: '12px' }}>
+                        <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>NOTES</p>
+                        <p
+                          style={{
+                            margin: '0',
+                            fontSize: '13px',
+                            color: '#374151',
+                            fontStyle: 'italic',
+                            backgroundColor: '#fef3c7',
+                            padding: '8px',
+                            borderRadius: '4px',
+                          }}
+                        >
+                          {item.notes}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Date and Image */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-end',
+                        gap: '12px',
+                        paddingTop: '12px',
+                        borderTop: '1px solid #e5e7eb',
                       }}
                     >
-                      Delete
-                    </button>
-                  </div>
-                  <p style={{ margin: '5px 0' }}><strong>Quantity:</strong> {item.quantity}</p>
-                  <p style={{ margin: '5px 0' }}><strong>Category:</strong> {item.category}</p>
-                  {item.notes && <p style={{ margin: '5px 0' }}><strong>Notes:</strong> {item.notes}</p>}
-                  <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
-                    <strong>Added:</strong> {new Date(item.dateAdded).toLocaleDateString()}
-                  </p>
-                  {item.image && (
-                    <div style={{ marginTop: '10px' }}>
-                      <img 
-                        src={item.image} 
-                        alt={item.name}
-                        style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
+                      <p style={{ margin: '0', fontSize: '12px', color: '#9ca3af' }}>
+                        📅{' '}
+                        {new Date(item.dateAdded).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      {item.image && (
+                        <div>
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e5e7eb' }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="empty-state" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-              <p>No items found matching your search.</p>
-              <button 
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '48px 20px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+              }}
+            >
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+              <h3 style={{ margin: '0 0 8px 0', color: '#1f2937', fontSize: '16px', fontWeight: '600' }}>
+                No items found
+              </h3>
+              <p style={{ margin: '0 0 16px 0', color: '#6b7280', fontSize: '14px' }}>
+                Try adjusting your search term
+              </p>
+              <Button
                 onClick={() => handleSearchChange('')}
                 style={{
-                  marginTop: '10px',
-                  padding: '8px 16px',
-                  backgroundColor: '#007bff',
+                  padding: '10px 20px',
+                  backgroundColor: '#6366f1',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
                 }}
               >
                 Clear Search
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -440,23 +651,41 @@ const ShoppingLists: React.FC = () => {
         <>
           {/* List Creation Form */}
           <div className="list-creation-form" style={{ 
-            backgroundColor: '#f8f9fa', 
-            padding: '20px', 
-            borderRadius: '8px', 
-            marginBottom: '30px' 
+            backgroundColor: '#ffffff', 
+            padding: '24px', 
+            borderRadius: '10px', 
+            marginBottom: '30px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
           }}>
-            <h3>Create a new Shopping List</h3>
-            <form onSubmit={handleCreateList} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#1f2937', fontSize: '18px', fontWeight: '600' }}>Create a new Shopping List</h3>
+            <form onSubmit={handleCreateList} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
                 <Input
                   type="text"
                   name="newListName"
-                  placeholder="Enter new list name"
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
+                  placeholder="Enter new list name"
                 />
               </div>
-              <Button onClick={() => {}} disabled={!newListName.trim()}>Create List</Button>
+              <Button 
+                type="submit"
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+                }}
+              >
+                Create List
+              </Button>
             </form>
           </div>
 
@@ -481,7 +710,8 @@ const ShoppingLists: React.FC = () => {
                 name: '', 
                 quantity: 1, 
                 category: '', 
-                image: '', 
+                image: '',
+                notes: '',
                 shoppingListId: list.id, 
                 dateAdded: '' 
               };
@@ -499,13 +729,14 @@ const ShoppingLists: React.FC = () => {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     {editingListId === list.id ? (
-                      <form onSubmit={handleEditListSubmit(list.id)} style={{ flex: 1 }}>
+                      <form onSubmit={(e) => { e.preventDefault(); handleEditListSubmit(list.id); }} style={{ flex: 1 }}>
                         <Input
                           type="text"
                           name="editListName"
+                          placeholder="List name"
                           value={editListName}
                           onChange={(e) => setEditListName(e.target.value)}
-                          onBlur={handleEditListSubmit(list.id)}
+                          onBlur={() => handleEditListSubmit(list.id)}
                           autoFocus
                         />
                       </form>
@@ -517,7 +748,7 @@ const ShoppingLists: React.FC = () => {
                           style={{ 
                             padding: '4px 8px', 
                             fontSize: '12px',
-                            backgroundColor: '#6c757d',
+                            backgroundColor: '#3b82f6',
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
@@ -528,7 +759,12 @@ const ShoppingLists: React.FC = () => {
                         </button>
                       </div>
                     )}
-                    <Button onClick={() => handleDeleteList(list.id)}>Delete List</Button>
+                    <Button 
+                      onClick={() => handleDeleteList(list.id, list.name)}
+                      style={{ backgroundColor: '#ef4444', color: 'white', boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)' }}
+                    >
+                      Delete List
+                    </Button>
                   </div>
                   
                   <div className="item-grid" style={{ marginBottom: '25px' }}>
@@ -536,157 +772,210 @@ const ShoppingLists: React.FC = () => {
                       Items ({sortedItems.length}) - Sorted by {getSortDisplayText(sortKey)}
                     </h4>
                     {sortedItems.length > 0 ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                         {sortedItems.map((item) => (
                           <div key={item.id} className="item-card" style={{
-                            border: editingItemId === item.id ? '2px solid #007bff' : '1px solid #eee',
-                            padding: '15px',
-                            borderRadius: '6px',
-                            backgroundColor: editingItemId === item.id ? '#e7f3ff' : '#fafafa'
+                            border: editingItemId === item.id ? '2px solid #6366f1' : '1px solid #e5e7eb',
+                            padding: '0',
+                            borderRadius: '10px',
+                            backgroundColor: editingItemId === item.id ? '#f0f4ff' : '#ffffff',
+                            boxShadow: editingItemId === item.id ? '0 4px 12px rgba(99, 102, 241, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
+                            overflow: 'hidden',
+                            transition: 'all 0.2s ease'
                           }}>
                             {editingItemId === item.id && editingItemData ? (
                               // Edit mode
-                              <div>
-                                <div style={{ marginBottom: '10px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Name</label>
-                                  <input
-                                    type="text"
-                                    name="name"
-                                    value={editingItemData.name || ''}
-                                    onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                  />
+                              <div style={{ backgroundColor: '#f0f4ff', padding: '16px', borderRadius: '8px', border: '2px solid #6366f1', width: '100%' }}>
+                                <h5 style={{ margin: '0 0 14px 0', color: '#1f2937', fontSize: '14px', fontWeight: '600' }}>Edit Item</h5>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Name</label>
+                                    <input
+                                      type="text"
+                                      name="name"
+                                      value={editingItemData.name || ''}
+                                      onChange={handleEditItemChange}
+                                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Quantity</label>
+                                    <input
+                                      type="number"
+                                      name="quantity"
+                                      value={editingItemData.quantity || 1}
+                                      onChange={handleEditItemChange}
+                                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                                    />
+                                  </div>
                                 </div>
-                                <div style={{ marginBottom: '10px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Quantity</label>
-                                  <input
-                                    type="number"
-                                    name="quantity"
-                                    value={editingItemData.quantity || 1}
-                                    onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                  />
-                                </div>
-                                <div style={{ marginBottom: '10px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Category</label>
+                                <div style={{ marginBottom: '12px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Category</label>
                                   <input
                                     type="text"
                                     name="category"
                                     value={editingItemData.category || ''}
                                     onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
                                   />
                                 </div>
-                                <div style={{ marginBottom: '10px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Notes</label>
+                                <div style={{ marginBottom: '12px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Notes</label>
                                   <input
                                     type="text"
                                     name="notes"
                                     value={editingItemData.notes || ''}
                                     onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
                                   />
                                 </div>
-                                <div style={{ marginBottom: '10px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Image URL</label>
+                                <div style={{ marginBottom: '14px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Image URL</label>
                                   <input
                                     type="text"
                                     name="image"
                                     value={editingItemData.image || ''}
                                     onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
                                   />
                                 </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                  <button
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                  <Button
                                     onClick={() => handleSaveEditedItem(list.id, item.id)}
                                     style={{
-                                      flex: 1,
-                                      padding: '8px',
-                                      backgroundColor: '#28a745',
+                                      padding: '10px 16px',
+                                      backgroundColor: '#10b981',
                                       color: 'white',
                                       border: 'none',
-                                      borderRadius: '4px',
+                                      borderRadius: '6px',
                                       cursor: 'pointer',
-                                      fontSize: '12px'
+                                      fontSize: '13px',
+                                      fontWeight: '600',
+                                      transition: 'background-color 0.2s',
+                                      width: '100%'
                                     }}
                                   >
                                     Save
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button
                                     onClick={cancelEditingItem}
                                     style={{
-                                      flex: 1,
-                                      padding: '8px',
-                                      backgroundColor: '#6c757d',
+                                      padding: '10px 16px',
+                                      backgroundColor: '#9ca3af',
                                       color: 'white',
                                       border: 'none',
-                                      borderRadius: '4px',
+                                      borderRadius: '6px',
                                       cursor: 'pointer',
-                                      fontSize: '12px'
+                                      fontSize: '13px',
+                                      fontWeight: '600',
+                                      transition: 'background-color 0.2s',
+                                      width: '100%'
                                     }}
                                   >
                                     Cancel
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             ) : (
                               // View mode
-                              <>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                                  <h5 style={{ margin: 0, color: '#333', flex: 1 }}>{item.name}</h5>
-                                  <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button 
-                                      onClick={() => startEditingItem(item)}
-                                      style={{ 
-                                        padding: '4px 8px', 
-                                        fontSize: '12px',
-                                        backgroundColor: '#007bff',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        whiteSpace: 'nowrap'
-                                      }}
-                                    >
-                                      Edit
-                                    </button>
-                                    <button 
-                                      onClick={() => handleDeleteItem(list.id, item.id)}
-                                      style={{ 
-                                        padding: '4px 8px', 
-                                        fontSize: '12px',
-                                        backgroundColor: '#dc3545',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        whiteSpace: 'nowrap'
-                                      }}
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                </div>
-                                <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Qty:</strong> {item.quantity}</p>
-                                <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Category:</strong> {item.category}</p>
-                                {item.notes && <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Notes:</strong> {item.notes}</p>}
-                                <p style={{ margin: '4px 0', fontSize: '12px', color: '#666' }}>
-                                  Added: {new Date(item.dateAdded).toLocaleDateString()}
-                                </p>
+                              <div style={{ padding: '20px' }}>
                                 {item.image && isValidImageUrl(item.image) && (
-                                  <div style={{ marginTop: '8px' }}>
+                                  <div style={{ marginBottom: '16px', marginLeft: '-20px', marginRight: '-20px', marginTop: '-20px', display: 'flex', justifyContent: 'center', overflow: 'hidden', borderRadius: '10px 10px 0 0' }}>
                                     <img 
                                       src={item.image} 
                                       alt={item.name}
-                                      style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                      style={{ 
+                                        width: '100%', 
+                                        maxHeight: '200px', 
+                                        objectFit: 'cover'
+                                      }}
                                       onError={(e) => {
                                         e.currentTarget.style.display = 'none';
                                       }}
                                     />
                                   </div>
                                 )}
-                              </>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                                  <h5 style={{ margin: 0, color: '#1f2937', fontSize: '16px', fontWeight: '700', flex: 1 }}>{item.name}</h5>
+                                </div>
+                                <div style={{ 
+                                  display: 'grid', 
+                                  gridTemplateColumns: '1fr 1fr', 
+                                  gap: '12px', 
+                                  marginBottom: '16px',
+                                  padding: '12px',
+                                  backgroundColor: '#f3f4f6',
+                                  borderRadius: '8px'
+                                }}>
+                                  <div>
+                                    <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Quantity</p>
+                                    <p style={{ margin: 0, fontSize: '18px', color: '#1f2937', fontWeight: '700' }}>{item.quantity}</p>
+                                  </div>
+                                  <div>
+                                    <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Category</p>
+                                    <p style={{ margin: 0, fontSize: '18px', color: '#1f2937', fontWeight: '700' }}>{item.category}</p>
+                                  </div>
+                                </div>
+                                {item.notes && (
+                                  <div style={{ 
+                                    marginBottom: '16px', 
+                                    padding: '12px', 
+                                    backgroundColor: '#fef3c7', 
+                                    borderLeft: '4px solid #fbbf24',
+                                    borderRadius: '6px'
+                                  }}>
+                                    <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#92400e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes</p>
+                                    <p style={{ margin: 0, fontSize: '13px', color: '#78350f' }}>{item.notes}</p>
+                                  </div>
+                                )}
+                                <div style={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between', 
+                                  alignItems: 'center',
+                                  paddingTop: '12px',
+                                  borderTop: '1px solid #e5e7eb'
+                                }}>
+                                  <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>
+                                    {new Date(item.dateAdded).toLocaleDateString()}
+                                  </p>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <Button 
+                                      onClick={() => startEditingItem(item)}
+                                      style={{
+                                        padding: '6px 14px',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        backgroundColor: '#3b82f6',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap',
+                                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button 
+                                      onClick={() => handleDeleteItem(list.id, item.id, item.name)}
+                                      style={{
+                                        padding: '6px 14px',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        backgroundColor: '#ef4444',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap',
+                                        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)'
+                                      }}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
                             )}
                           </div>
                         ))}
@@ -696,64 +985,142 @@ const ShoppingLists: React.FC = () => {
                     )}
                   </div>
                   
-                  <div className="add-item-form-container" style={{
-                    backgroundColor: '#f8f9fa',
-                    padding: '20px',
-                    borderRadius: '6px'
-                  }}>
-                    <h4 style={{ marginTop: 0, color: '#555' }}>Add a new item to this list</h4>
-                    <form onSubmit={(e) => { e.preventDefault(); handleAddItem(list.id); }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <Input
-                          type="text"
-                          name="name"
-                          placeholder="Item name"
-                          value={formData.name}
-                          onChange={(e) => handleItemFormChange(e, list.id)}
-                        />
-                        <Input
-                          type="number"
-                          name="quantity"
-                          placeholder="Quantity"
-                          value={String(formData.quantity)}
-                          onChange={(e) => handleItemFormChange(e, list.id)}
-                        />
-                        <Input
-                          type="text"
-                          name="category"
-                          placeholder="Category"
-                          value={formData.category}
-                          onChange={(e) => handleItemFormChange(e, list.id)}
-                        />
-                        <Input
-                          type="text"
-                          name="image"
-                          placeholder="Image URL"
-                          value={formData.image}
-                          onChange={(e) => handleItemFormChange(e, list.id)}
-                        />
-                      </div>
-                      
-                      {formData.image && !isValidImageUrl(formData.image) && (
-                        <p style={{ color: '#dc3545', fontSize: '14px', margin: '8px 0' }}>
-                          Please enter a valid image URL (must start with http/https and end with a valid image extension)
-                        </p>
-                      )}
-                      
-                      {formData.image && isValidImageUrl(formData.image) && (
-                        <ImagePreview url={formData.image} />
-                      )}
-                      
-                      <div className="form-actions" style={{ marginTop: '15px' }}>
-                        <Button
-                          onClick={() => {}}
-                          disabled={!formData.name.trim() || (formData.image && !isValidImageUrl(formData.image))}
+                  {addItemFormVisibleListId === list.id ? (
+                    <div className="add-item-form-container" style={{
+                      backgroundColor: '#f0f4ff',
+                      padding: '24px',
+                      borderRadius: '8px',
+                      border: '2px solid #6366f1',
+                      marginTop: '20px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h4 style={{ margin: 0, color: '#1f2937', fontSize: '16px', fontWeight: '600' }}>Add a new item to this list</h4>
+                        <button
+                          onClick={() => setAddItemFormVisibleListId(null)}
+                          style={{
+                            padding: '4px 12px',
+                            backgroundColor: '#9ca3af',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
                         >
-                          Add Item
-                        </Button>
+                          Cancel
+                        </button>
                       </div>
-                    </form>
-                  </div>
+                      <form onSubmit={(e) => { e.preventDefault(); handleAddItem(list.id); }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '10px' }}>
+                          <Input
+                            type="text"
+                            name="name"
+                            placeholder="Item name *"
+                            value={formData.name}
+                            onChange={(e) => handleItemFormChange(e, list.id)}
+                            required
+                          />
+                          <Input
+                            type="number"
+                            name="quantity"
+                            placeholder="Quantity"
+                            value={String(formData.quantity)}
+                            onChange={(e) => handleItemFormChange(e, list.id)}
+                            min="1"
+                          />
+                          <Input
+                            type="text"
+                            name="category"
+                            placeholder="Category (e.g., Food, Drinks)"
+                            value={formData.category}
+                            onChange={(e) => handleItemFormChange(e, list.id)}
+                          />
+                          <Input
+                            type="text"
+                            name="image"
+                            placeholder="Image URL (optional)"
+                            value={formData.image}
+                            onChange={(e) => handleItemFormChange(e, list.id)}
+                          />
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                          <Input
+                            type="text"
+                            name="notes"
+                            placeholder="Notes (optional)"
+                            value={formData.notes || ''}
+                            onChange={(e) => handleItemFormChange(e, list.id)}
+                          />
+                        </div>
+                        
+                        {formData.image && !isValidImageUrl(formData.image) && (
+                          <p style={{ color: '#dc3545', fontSize: '14px', margin: '8px 0' }}>
+                            Please enter a valid image URL (must start with http/https and end with a valid image extension)
+                          </p>
+                        )}
+                        
+                        {formData.image && isValidImageUrl(formData.image) && (
+                          <ImagePreview url={formData.image} />
+                        )}
+                        
+                        <div className="form-actions" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                          <Button
+                            type="submit"
+                            disabled={!formData.name.trim() || (formData.image && !isValidImageUrl(formData.image))}
+                            style={{
+                              padding: '10px 20px',
+                              backgroundColor: '#10b981',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              flex: 1
+                            }}
+                          >
+                            Add Item
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setAddItemFormVisibleListId(null)}
+                            style={{
+                              padding: '10px 20px',
+                              backgroundColor: '#9ca3af',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              flex: 1
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setAddItemFormVisibleListId(list.id)}
+                      style={{
+                        marginTop: '20px',
+                        padding: '12px 24px',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+                      }}
+                    >
+                      + Add Item
+                    </Button>
+                  )}
                 </div>
               );
             })

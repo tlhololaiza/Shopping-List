@@ -4,7 +4,7 @@ import { registerUser } from '../../api/jsonServer';
 import { encryptData } from '../../utils/encryption';
 import { validateRegistration } from '../../utils/validation';
 import type { RegisterData } from '../../utils/types';
-import { ShoppingCart, User, Mail, Lock, Phone } from 'lucide-react';
+import { ShoppingCart, User, Mail, Lock } from 'lucide-react';
 import Button from '../../components/Button/Button';
 import Input from '../../components/Input/Input';
 import './Register.css';
@@ -15,7 +15,6 @@ const Register: React.FC = () => {
     surname: '',
     email: '',
     password: '',
-    cellNumber: '',
   });
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');

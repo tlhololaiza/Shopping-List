@@ -4,12 +4,15 @@ import './Input.css';
 interface InputProps {
   type: string;
   name: string;
-  placeholder: string;
+  placeholder?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  autoFocus?: boolean;
+  min?: string;
 }
 
 const Input: React.FC<InputProps> = ({ 
@@ -20,7 +23,10 @@ const Input: React.FC<InputProps> = ({
   onChange,
   required = false,
   disabled = false,
-  className = ''
+  className = '',
+  onBlur,
+  autoFocus = false,
+  min
 }) => {
   return (
     <input
@@ -32,6 +38,9 @@ const Input: React.FC<InputProps> = ({
       required={required}
       disabled={disabled}
       className={`custom-input ${className}`}
+      onBlur={onBlur}
+      autoFocus={autoFocus}
+      min={min}
     />
   );
 };

@@ -6,7 +6,6 @@ export interface User {
   name: string;
   surname: string;
   email: string;
-  cellNumber: string;
   password?: string; // Optional because it might not always be fetched
 }
 
@@ -16,7 +15,6 @@ export interface RegisterData {
   surname: string;
   email: string;
   password: string;
-  cellNumber: string;
 }
 
 // Defines the data structure for an individual item in a shopping list

@@ -28,7 +28,6 @@ const initialFormData: RegisterData = {
   surname: '',
   email: '',
   password: '',
-  cellNumber: '',
 };
 
 const initialState: FormState = {

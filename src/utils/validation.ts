@@ -10,7 +10,7 @@ const isValidPassword = (password: string): boolean => {
 };
 
 export const validateRegistration = (data: RegisterData): { isValid: boolean, message: string } => {
-  if (!data.name || !data.surname || !data.email || !data.password || !data.cellNumber) {
+  if (!data.name || !data.surname || !data.email || !data.password) {
     return { isValid: false, message: 'All fields are required.' };
   }
 
