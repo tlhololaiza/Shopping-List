@@ -24,6 +24,10 @@ import {
 } from '../../api/jsonServer';
 import Input from '../../components/Input/Input';
 import Button from '../../components/Button/Button';
+import DeleteConfirmationModal from '../../components/ShoppingList/DeleteConfirmationModal/DeleteConfirmationModal';
+import ItemCard from '../../components/ShoppingList/ItemCard/ItemCard';
+import AddItemForm from '../../components/ShoppingList/AddItemForm/AddItemForm';
+import SearchBar from '../../components/ShoppingList/SearchBar/SearchBar';
 import type { ShoppingListItem, ShoppingList } from '../../utils/types';
 import './ShoppingLists.css';
 
@@ -132,9 +136,8 @@ const ShoppingLists: React.FC = () => {
       try {
         const fetchedLists = await getShoppingListsByUserId(user.id);
         dispatch(setShoppingLists(fetchedLists));
-      } catch (err) {
+      } catch {
         dispatch(setError('Failed to fetch shopping lists. Please try again.'));
-        console.error('Fetch failed:', err);
       } finally {
         dispatch(setLoading(false));
       }
@@ -151,8 +154,8 @@ const ShoppingLists: React.FC = () => {
         const createdList = await createShoppingList(newListData);
         dispatch(addShoppingList(createdList));
         setNewListName('');
-      } catch (err) {
-        console.error('Failed to create list:', err);
+      } catch {
+        // Failed to create list
       }
     }
   };
@@ -179,8 +182,8 @@ const ShoppingLists: React.FC = () => {
         const createdItem = await createShoppingListItem(newItem);
         dispatch(addItemToShoppingList({ listId, item: createdItem }));
         setItemForms((prev) => ({ ...prev, [listId]: { name: '', quantity: 1, category: '', image: '', notes: '', shoppingListId: listId, dateAdded: '' } }));
-      } catch (err) {
-        console.error('Failed to add item:', err);
+      } catch {
+        // Failed to add item
       }
     }
   };
@@ -200,8 +203,8 @@ const ShoppingLists: React.FC = () => {
         await deleteShoppingListItem(confirmDelete.itemId);
         dispatch(deleteItemFromShoppingList({ listId: confirmDelete.listId, itemId: confirmDelete.itemId }));
       }
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      // Failed to delete
     } finally {
       setConfirmDelete(null);
     }
@@ -212,8 +215,8 @@ const ShoppingLists: React.FC = () => {
     try {
       const updated = await updateShoppingListItem(itemId, updatedData);
       dispatch(updateItemInShoppingList({ listId, itemId, updatedItem: updated }));
-    } catch (err) {
-      console.error('Failed to update item:', err);
+    } catch {
+      // Failed to update item
     }
   };
 
@@ -272,8 +275,7 @@ const ShoppingLists: React.FC = () => {
       try {
         const results = await searchShoppingListItems(user.id, searchTerm);
         setSearchResults(results);
-      } catch (err) {
-        console.error('Search failed:', err);
+      } catch {
         setSearchResults([]);
       }
     };
@@ -290,8 +292,8 @@ const ShoppingLists: React.FC = () => {
         await updateListApi(listId, editListName.trim());
         dispatch(updateShoppingListName({ listId, newName: editListName.trim() }));
         setEditingListId(null);
-      } catch (err) {
-        console.error('Failed to update list name:', err);
+      } catch {
+        // Failed to update list name
       }
     }
   };
@@ -331,139 +333,27 @@ const ShoppingLists: React.FC = () => {
 
   return (
     <div className="shopping-lists-container">
-      {/* Delete confirmation dialog */}
-      {confirmDelete && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            padding: '16px',
-          }}
-        >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: '420px',
-              backgroundColor: '#ffffff',
-              borderRadius: '12px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-              padding: '24px',
-            }}
-          >
-            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '22px' }}>⚠️</span>
-              <h3 style={{ margin: 0, fontSize: '18px', color: '#111827', fontWeight: 700 }}>Confirm delete</h3>
-            </div>
-            <p style={{ margin: '0 0 6px 0', color: '#4b5563', fontSize: '14px' }}>
-              {confirmDelete.type === 'list'
-                ? 'This will remove the list and all its items.'
-                : 'This will remove the item from this list.'}
-            </p>
-            <p style={{ margin: '0 0 16px 0', color: '#111827', fontSize: '15px', fontWeight: 600 }}>
-              {confirmDelete.name}
-            </p>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <Button
-                onClick={() => setConfirmDelete(null)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  backgroundColor: '#e5e7eb',
-                  color: '#111827',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={performDelete}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationModal
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={performDelete}
+        title="Confirm delete"
+        message={
+          confirmDelete?.type === 'list'
+            ? 'This will remove the list and all its items.'
+            : 'This will remove the item from this list.'
+        }
+        itemName={confirmDelete?.name || ''}
+      />
 
       <h2>My Shopping Lists</h2>
       
-      {/* Search Input and Sort Dropdown */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px' }}>
-        <div style={{ flex: 1 }}>
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search for an item..."
-            value={searchTerm}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-        </div>
-        <select 
-          value={sortKey} 
-          onChange={(e) => handleSortChange(e.target.value as 'name' | 'category' | 'date')}
-          style={{
-            padding: '12px 16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            fontSize: '15px',
-            backgroundColor: 'white',
-            color: '#1f2937',
-            cursor: 'pointer',
-            fontFamily: 'Poppins, sans-serif',
-            fontWeight: '500',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-            minWidth: '180px'
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = '#10b981';
-            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = '#e5e7eb';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
-          }}
-        >
-          <option value="date">{getSortDisplayText('date')}</option>
-          <option value="name">{getSortDisplayText('name')}</option>
-          <option value="category">{getSortDisplayText('category')}</option>
-        </select>
-      </div>
-
-      {/* URL Info Display (for debugging - remove in production) */}
-      {(searchTerm || sortKey !== 'date') && (
-        <div style={{ 
-          backgroundColor: '#f8f9fa', 
-          padding: '10px', 
-          marginBottom: '20px', 
-          borderRadius: '5px',
-          fontSize: '14px',
-          color: '#6c757d'
-        }}>
-          Current URL parameters: 
-          {searchTerm && ` search="${searchTerm}"`}
-          {sortKey !== 'date' && ` sort="${sortKey}"`}
-        </div>
-      )}
-
+      <SearchBar
+        searchTerm={searchTerm}
+        sortKey={sortKey}
+        onSearchChange={handleSearchChange}
+        onSortChange={handleSortChange}
+      />
       {/* Main Content Area: Search Results or All Lists */}
       {searchResults !== null ? (
         <div className="search-results">
@@ -774,210 +664,18 @@ const ShoppingLists: React.FC = () => {
                     {sortedItems.length > 0 ? (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
                         {sortedItems.map((item) => (
-                          <div key={item.id} className="item-card" style={{
-                            border: editingItemId === item.id ? '2px solid #6366f1' : '1px solid #e5e7eb',
-                            padding: '0',
-                            borderRadius: '10px',
-                            backgroundColor: editingItemId === item.id ? '#f0f4ff' : '#ffffff',
-                            boxShadow: editingItemId === item.id ? '0 4px 12px rgba(99, 102, 241, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
-                            overflow: 'hidden',
-                            transition: 'all 0.2s ease'
-                          }}>
-                            {editingItemId === item.id && editingItemData ? (
-                              // Edit mode
-                              <div style={{ backgroundColor: '#f0f4ff', padding: '16px', borderRadius: '8px', border: '2px solid #6366f1', width: '100%' }}>
-                                <h5 style={{ margin: '0 0 14px 0', color: '#1f2937', fontSize: '14px', fontWeight: '600' }}>Edit Item</h5>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                                  <div>
-                                    <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Name</label>
-                                    <input
-                                      type="text"
-                                      name="name"
-                                      value={editingItemData.name || ''}
-                                      onChange={handleEditItemChange}
-                                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Quantity</label>
-                                    <input
-                                      type="number"
-                                      name="quantity"
-                                      value={editingItemData.quantity || 1}
-                                      onChange={handleEditItemChange}
-                                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                                    />
-                                  </div>
-                                </div>
-                                <div style={{ marginBottom: '12px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Category</label>
-                                  <input
-                                    type="text"
-                                    name="category"
-                                    value={editingItemData.category || ''}
-                                    onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                                  />
-                                </div>
-                                <div style={{ marginBottom: '12px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Notes</label>
-                                  <input
-                                    type="text"
-                                    name="notes"
-                                    value={editingItemData.notes || ''}
-                                    onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                                  />
-                                </div>
-                                <div style={{ marginBottom: '14px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '6px', fontWeight: '500' }}>Image URL</label>
-                                  <input
-                                    type="text"
-                                    name="image"
-                                    value={editingItemData.image || ''}
-                                    onChange={handleEditItemChange}
-                                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                                  />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                  <Button
-                                    onClick={() => handleSaveEditedItem(list.id, item.id)}
-                                    style={{
-                                      padding: '10px 16px',
-                                      backgroundColor: '#10b981',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      fontSize: '13px',
-                                      fontWeight: '600',
-                                      transition: 'background-color 0.2s',
-                                      width: '100%'
-                                    }}
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    onClick={cancelEditingItem}
-                                    style={{
-                                      padding: '10px 16px',
-                                      backgroundColor: '#9ca3af',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      fontSize: '13px',
-                                      fontWeight: '600',
-                                      transition: 'background-color 0.2s',
-                                      width: '100%'
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              // View mode
-                              <div style={{ padding: '20px' }}>
-                                {item.image && isValidImageUrl(item.image) && (
-                                  <div style={{ marginBottom: '16px', marginLeft: '-20px', marginRight: '-20px', marginTop: '-20px', display: 'flex', justifyContent: 'center', overflow: 'hidden', borderRadius: '10px 10px 0 0' }}>
-                                    <img 
-                                      src={item.image} 
-                                      alt={item.name}
-                                      style={{ 
-                                        width: '100%', 
-                                        maxHeight: '200px', 
-                                        objectFit: 'cover'
-                                      }}
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                                  <h5 style={{ margin: 0, color: '#1f2937', fontSize: '16px', fontWeight: '700', flex: 1 }}>{item.name}</h5>
-                                </div>
-                                <div style={{ 
-                                  display: 'grid', 
-                                  gridTemplateColumns: '1fr 1fr', 
-                                  gap: '12px', 
-                                  marginBottom: '16px',
-                                  padding: '12px',
-                                  backgroundColor: '#f3f4f6',
-                                  borderRadius: '8px'
-                                }}>
-                                  <div>
-                                    <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Quantity</p>
-                                    <p style={{ margin: 0, fontSize: '18px', color: '#1f2937', fontWeight: '700' }}>{item.quantity}</p>
-                                  </div>
-                                  <div>
-                                    <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Category</p>
-                                    <p style={{ margin: 0, fontSize: '18px', color: '#1f2937', fontWeight: '700' }}>{item.category}</p>
-                                  </div>
-                                </div>
-                                {item.notes && (
-                                  <div style={{ 
-                                    marginBottom: '16px', 
-                                    padding: '12px', 
-                                    backgroundColor: '#fef3c7', 
-                                    borderLeft: '4px solid #fbbf24',
-                                    borderRadius: '6px'
-                                  }}>
-                                    <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#92400e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes</p>
-                                    <p style={{ margin: 0, fontSize: '13px', color: '#78350f' }}>{item.notes}</p>
-                                  </div>
-                                )}
-                                <div style={{ 
-                                  display: 'flex', 
-                                  justifyContent: 'space-between', 
-                                  alignItems: 'center',
-                                  paddingTop: '12px',
-                                  borderTop: '1px solid #e5e7eb'
-                                }}>
-                                  <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>
-                                    {new Date(item.dateAdded).toLocaleDateString()}
-                                  </p>
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                    <Button 
-                                      onClick={() => startEditingItem(item)}
-                                      style={{
-                                        padding: '6px 14px',
-                                        fontSize: '12px',
-                                        fontWeight: '600',
-                                        backgroundColor: '#3b82f6',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        whiteSpace: 'nowrap',
-                                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
-                                      }}
-                                    >
-                                      Edit
-                                    </Button>
-                                    <Button 
-                                      onClick={() => handleDeleteItem(list.id, item.id, item.name)}
-                                      style={{
-                                        padding: '6px 14px',
-                                        fontSize: '12px',
-                                        fontWeight: '600',
-                                        backgroundColor: '#ef4444',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        whiteSpace: 'nowrap',
-                                        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)'
-                                      }}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          <ItemCard
+                            key={item.id}
+                            item={item}
+                            listId={list.id}
+                            isEditing={editingItemId === item.id}
+                            editingData={editingItemId === item.id ? editingItemData : undefined}
+                            onEdit={startEditingItem}
+                            onDelete={handleDeleteItem}
+                            onSave={handleSaveEditedItem}
+                            onCancel={cancelEditingItem}
+                            onChange={handleEditItemChange}
+                          />
                         ))}
                       </div>
                     ) : (
@@ -985,134 +683,16 @@ const ShoppingLists: React.FC = () => {
                     )}
                   </div>
                   
-                  {addItemFormVisibleListId === list.id ? (
-                    <div className="add-item-form-container" style={{
-                      backgroundColor: '#ffffff',
-                      padding: '24px',
-                      borderRadius: '10px',
-                      border: '1px solid #e5e7eb',
-                      marginTop: '20px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h4 style={{ margin: 0, color: '#1f2937', fontSize: '18px', fontWeight: '600', fontFamily: 'Poppins, sans-serif' }}>Add a new item to this list</h4>
-                        <button
-                          onClick={() => setAddItemFormVisibleListId(null)}
-                          style={{
-                            padding: '6px 14px',
-                            backgroundColor: '#6b7280',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            fontWeight: '500',
-                            fontFamily: 'Poppins, sans-serif',
-                            transition: 'background-color 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                      <form onSubmit={(e) => { e.preventDefault(); handleAddItem(list.id); }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-                          <Input
-                            type="text"
-                            name="name"
-                            placeholder="Item name *"
-                            value={formData.name}
-                            onChange={(e) => handleItemFormChange(e, list.id)}
-                            required
-                          />
-                          <Input
-                            type="number"
-                            name="quantity"
-                            placeholder="Quantity"
-                            value={String(formData.quantity)}
-                            onChange={(e) => handleItemFormChange(e, list.id)}
-                            min="1"
-                          />
-                          <Input
-                            type="text"
-                            name="category"
-                            placeholder="Category (e.g., Food, Drinks)"
-                            value={formData.category}
-                            onChange={(e) => handleItemFormChange(e, list.id)}
-                          />
-                          <Input
-                            type="text"
-                            name="image"
-                            placeholder="Image URL (optional)"
-                            value={formData.image}
-                            onChange={(e) => handleItemFormChange(e, list.id)}
-                          />
-                        </div>
-                        <div style={{ marginBottom: '12px' }}>
-                          <Input
-                            type="text"
-                            name="notes"
-                            placeholder="Notes (optional)"
-                            value={formData.notes || ''}
-                            onChange={(e) => handleItemFormChange(e, list.id)}
-                          />
-                        </div>
-                        
-                        {formData.image && !isValidImageUrl(formData.image) && (
-                          <p style={{ color: '#dc3545', fontSize: '14px', margin: '8px 0', fontFamily: 'Poppins, sans-serif' }}>
-                            Please enter a valid image URL (must start with http/https and end with a valid image extension)
-                          </p>
-                        )}
-                        
-                        {formData.image && isValidImageUrl(formData.image) && (
-                          <ImagePreview url={formData.image} />
-                        )}
-                        
-                        <div className="form-actions" style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
-                          <Button
-                            type="submit"
-                            disabled={!formData.name.trim() || (formData.image && !isValidImageUrl(formData.image))}
-                            style={{
-                              padding: '12px 24px',
-                              backgroundColor: '#10b981',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              fontSize: '15px',
-                              fontWeight: '600',
-                              fontFamily: 'Poppins, sans-serif',
-                              flex: 1,
-                              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
-                              transition: 'background-color 0.2s'
-                            }}
-                          >
-                            Add Item
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => setAddItemFormVisibleListId(null)}
-                            style={{
-                              padding: '12px 24px',
-                              backgroundColor: '#6b7280',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              fontSize: '15px',
-                              fontWeight: '600',
-                              fontFamily: 'Poppins, sans-serif',
-                              flex: 1,
-                              transition: 'background-color 0.2s'
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </form>
-                    </div>
-                  ) : (
+                  <AddItemForm
+                    listId={list.id}
+                    isVisible={addItemFormVisibleListId === list.id}
+                    onClose={() => setAddItemFormVisibleListId(null)}
+                    onSubmit={handleAddItem}
+                    formData={formData}
+                    onChange={handleItemFormChange}
+                  />
+                  
+                  {addItemFormVisibleListId !== list.id && (
                     <Button
                       onClick={() => setAddItemFormVisibleListId(list.id)}
                       style={{

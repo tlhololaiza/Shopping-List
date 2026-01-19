@@ -1,4 +1,3 @@
-// src/App.tsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -21,8 +20,7 @@ const App: React.FC = () => {
       try {
         const user: User = JSON.parse(storedUser);
         store.dispatch(login(user));
-      } catch (error) {
-        console.error("Failed to parse user data from local storage", error);
+      } catch {
         localStorage.removeItem('user');
       }
     }

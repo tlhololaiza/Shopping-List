@@ -56,9 +56,8 @@ const Register: React.FC = () => {
       toast.success('Registration successful! You can now log in.');
       navigate('/login'); 
 
-    } catch (err) {
+    } catch {
       toast.error('An error occurred. Please try again.');
-      console.error(err);
     }
   };
 

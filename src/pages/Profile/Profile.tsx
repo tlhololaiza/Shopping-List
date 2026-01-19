@@ -99,9 +99,8 @@ const Profile: React.FC = () => {
       setPassword('');
       setConfirmPassword('');
 
-    } catch (err) {
+    } catch {
       toast.error('Failed to update profile.');
-      console.error(err);
     }
   };
 

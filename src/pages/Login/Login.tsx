@@ -49,9 +49,8 @@ const Login: React.FC = () => {
       toast.success('Login successful!');
       navigate('/'); // Correctly redirects to the home page
 
-    } catch (err) {
+    } catch {
       toast.error('An error occurred. Please try again.');
-      console.error(err);
     }
   };
 
