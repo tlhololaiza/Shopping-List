@@ -189,4 +189,4 @@ This project is open source and available under the MIT License.
 
 ## 👨‍💻 Author
 
-Built with ❤️ using React + TypeScript + Vite
+Built by Tlholo using React + TypeScript + Vite
