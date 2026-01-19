@@ -1,0 +1,196 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+.login-container {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-color: #f5f5f0;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 450px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 3rem 2.5rem;
+  text-align: center;
+}
+
+.login-icon {
+  width: 80px;
+  height: 80px;
+  background-color: #2ecc71;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: white;
+}
+
+.login-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.login-container h2 {
+  font-size: 1.75rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.login-subtitle {
+  color: #7f8c8d;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #2c3e50;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: #7f8c8d;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  color: #2c3e50;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.login-container input:focus {
+  outline: none;
+  border-color: #2ecc71;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+}
+
+.login-container input::placeholder {
+  color: #95a5a6;
+}
+
+.error-message {
+  color: #ffffff;
+  background-color: #dc3545;
+  border: 1px solid #b02a37;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.login-container button {
+  width: 100%;
+  padding: 0.875rem;
+  border-radius: 8px;
+  border: none;
+  background-color: #2ecc71;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.2);
+  margin-top: 0.5rem;
+}
+
+.login-container button:hover {
+  background-color: #27ae60;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #7f8c8d;
+  font-size: 0.95rem;
+}
+
+.login-footer a {
+  color: #2ecc71;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    padding: 1rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+  
+  .login-container h2 {
+    font-size: 1.5rem;
+  }
+
+  .login-icon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .login-icon svg {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .login-container h2 {
+    font-size: 1.3rem;
+  }
+
+  .login-subtitle {
+    font-size: 0.9rem;
+  }
+}
