@@ -226,6 +226,86 @@ body {
 /* Responsive Design */
 @media (max-width: 768px) {
   .shopping-lists-container {
+    padding: 10px;
+  }
+
+  .shopping-lists-container h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+  }
+
+  .list-creation-form {
     padding: 15px;
+  }
+
+  .list-creation-form form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .shopping-list-card {
+    padding: 15px;
+  }
+
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .list-header h3 {
+    font-size: 1.3rem;
+  }
+
+  .items-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .item-card {
+    padding: 12px;
+  }
+
+  .item-content {
+    flex-direction: column;
+  }
+
+  .item-image-container {
+    width: 100%;
+    height: 150px;
+  }
+
+  .delete-button,
+  .edit-button,
+  .add-item-button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .shopping-lists-container h2 {
+    font-size: 1.5rem;
+  }
+
+  .list-creation-form {
+    padding: 12px;
+  }
+
+  .shopping-list-card {
+    padding: 12px;
+  }
+
+  .list-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .item-details h5 {
+    font-size: 1rem;
+  }
+
+  .item-details p {
+    font-size: 0.85rem;
   }
 }

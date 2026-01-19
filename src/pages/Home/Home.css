@@ -245,12 +245,24 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .hero-section {
+    min-height: 60vh;
+    padding: 3rem 1.5rem;
+  }
+
+  .hero-icon {
+    width: 80px;
+    height: 80px;
+    font-size: 38px;
+  }
+
   .hero-title {
     font-size: 2.5rem;
   }
 
   .hero-subtitle {
     font-size: 1rem;
+    padding: 0 1rem;
   }
 
   .features-title,
@@ -260,6 +272,7 @@ body {
 
   .features-grid {
     grid-template-columns: 1fr;
+    padding: 0 1rem;
   }
 
   .hero-buttons {
@@ -272,7 +285,48 @@ body {
     width: 100%;
     max-width: 300px;
   }
+
+  .features-section,
+  .cta-section {
+    padding: 3rem 1.5rem;
+  }
 }
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 2rem 1rem;
+  }
+
+  .hero-icon {
+    width: 70px;
+    height: 70px;
+    font-size: 32px;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    font-size: 1rem;
+    padding: 0.875rem 1.5rem;
+  }
+
+  .features-title,
+  .cta-title {
+    font-size: 1.75rem;
+  }
+
+  .feature-card {
+    padding: 1.5rem;
+  }
+}
+
 
 /* Existing styles for other components */
 .list-management {

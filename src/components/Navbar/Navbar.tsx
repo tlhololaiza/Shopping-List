@@ -1,20 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../redux/hooks';
 import { logout } from '../../redux/authSlice';
 import Button from '../Button/Button';
 import './Navbar.css';
-import { ShoppingCart, Home, List, User, LogIn, UserPlus, LogOut } from 'lucide-react'; // Import Lucide icons
+import { ShoppingCart, Home, List, User, LogIn, UserPlus, LogOut, Menu, X } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
-    localStorage.removeItem('user'); // Clear "stay logged in" data
+    localStorage.removeItem('user');
     navigate('/login');
+    setIsMobileMenuOpen(false);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -25,7 +31,16 @@ const Navbar: React.FC = () => {
           <span className="logo-text">ShopList</span>
         </Link>
       </div>
-      <ul className="navbar-links">
+      
+      <button 
+        className="mobile-menu-toggle" 
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      <ul className={`navbar-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
          {isAuthenticated && user ? (
           <>
             <li>
@@ -34,19 +49,19 @@ const Navbar: React.FC = () => {
               </span>
             </li>
             <li>
-                <Link to="/home" className="nav-link">
+                <Link to="/home" className="nav-link" onClick={closeMobileMenu}>
                   <Home size={16} />
                   <span>Home</span>
                 </Link>
             </li>
             <li>
-              <Link to="/shopping-lists" className="nav-link">
+              <Link to="/shopping-lists" className="nav-link" onClick={closeMobileMenu}>
                 <List size={16} />
                 <span>Shopping Lists</span>
               </Link>
             </li>
             <li>
-              <Link to="/profile" className="nav-link">
+              <Link to="/profile" className="nav-link" onClick={closeMobileMenu}>
                 <User size={16} />
                 <span>Profile</span>
               </Link>
@@ -61,12 +76,12 @@ const Navbar: React.FC = () => {
         ) : (
           <>
             <li>
-              <Link to="/login" className="nav-link-text">
+              <Link to="/login" className="nav-link-text" onClick={closeMobileMenu}>
                 Login
               </Link>
             </li>
             <li>
-              <Link to="/register" className="nav-btn-primary">
+              <Link to="/register" className="nav-btn-primary" onClick={closeMobileMenu}>
                 Get Started
               </Link>
             </li>

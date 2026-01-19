@@ -158,11 +158,39 @@
 }
 
 @media (max-width: 768px) {
+  .register-container {
+    padding: 1rem;
+  }
+
   .register-card {
     padding: 2rem 1.5rem;
   }
   
   .register-container h2 {
     font-size: 1.5rem;
+  }
+
+  .register-icon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .register-icon svg {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .register-container h2 {
+    font-size: 1.3rem;
+  }
+
+  .register-subtitle {
+    font-size: 0.9rem;
   }
 }

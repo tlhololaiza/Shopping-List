@@ -177,11 +177,39 @@
 }
 
 @media (max-width: 768px) {
+  .profile-container {
+    padding: 1rem;
+  }
+
   .profile-card {
     padding: 2rem 1.5rem;
   }
   
   .profile-container h2 {
     font-size: 1.5rem;
+  }
+
+  .profile-icon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .profile-icon svg {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .profile-container h2 {
+    font-size: 1.3rem;
+  }
+
+  .profile-subtitle {
+    font-size: 0.9rem;
   }
 }
