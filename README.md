@@ -63,10 +63,9 @@ A modern, fully responsive shopping list management application built with React
 
 3. **Start the JSON Server (backend)**
    ```bash
-   npm run server
+   npx json-server --watch db.json --port 5000
    ```
-   The API will run on `http://localhost:3000`
-
+  
 4. **Start the development server (frontend)**
    ```bash
    npm run dev
