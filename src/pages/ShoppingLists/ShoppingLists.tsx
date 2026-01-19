@@ -145,6 +145,26 @@ const ShoppingLists: React.FC = () => {
     fetchLists();
   }, [user, dispatch]);
 
+  // Perform search when search term changes
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!user?.id) return;
+      
+      if (searchTerm.trim()) {
+        try {
+          const results = await searchShoppingListItems(user.id, searchTerm);
+          setSearchResults(results);
+        } catch {
+          setSearchResults([]);
+        }
+      } else {
+        setSearchResults(null);
+      }
+    };
+    
+    performSearch();
+  }, [searchTerm, user]);
+
   // Handle shopping list creation
   const handleCreateList = async (e: React.FormEvent) => {
     e.preventDefault();

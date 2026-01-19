@@ -91,11 +91,31 @@ export const createShoppingListItem = async (itemData: Omit<ShoppingListItem, 'i
 
 // Search for items by name (keyword search)
 export const searchShoppingListItems = async (userId: number, keyword: string): Promise<ShoppingListItem[]> => {
-  const response = await fetch(`${API_BASE_URL}/items?shoppingList.userId=${userId}&name_like=${keyword}`);
-  if (!response.ok) {
-    throw new Error('Failed to search for shopping list items');
+  // First, get all shopping lists for this user
+  const listsResponse = await fetch(`${API_BASE_URL}/shoppingLists?userId=${userId}`);
+  if (!listsResponse.ok) {
+    throw new Error('Failed to fetch shopping lists');
   }
-  return response.json();
+  const userLists: ShoppingList[] = await listsResponse.json();
+  const listIds = userLists.map(list => list.id);
+  
+  // If no lists, return empty array
+  if (listIds.length === 0) {
+    return [];
+  }
+  
+  // Get all items for the user's lists
+  const itemsPromises = listIds.map(listId =>
+    fetch(`${API_BASE_URL}/items?shoppingListId=${listId}`)
+      .then(res => res.json())
+  );
+  
+  const itemsArrays = await Promise.all(itemsPromises);
+  const allItems: ShoppingListItem[] = itemsArrays.flat();
+  
+  // Filter items by keyword (case-insensitive)
+  const lowerKeyword = keyword.toLowerCase();
+  return allItems.filter(item => item.name.toLowerCase().includes(lowerKeyword));
 };
 
 // NEW: Update a shopping list's name
