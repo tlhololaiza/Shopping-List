@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerUser } from '../../api/jsonServer';
+import { registerUser, getUserByEmail } from '../../api/jsonServer';
 import { encryptData } from '../../utils/encryption';
 import { validateRegistration } from '../../utils/validation';
 import type { RegisterData } from '../../utils/types';
@@ -44,10 +44,17 @@ const Register: React.FC = () => {
     }
 
     try {
+      // Check if email already exists
+      const existingUser = await getUserByEmail(formData.email);
+      if (existingUser) {
+        toast.error('This email is already registered. Please use a different email or login.');
+        return;
+      }
+
       const encryptedData = { ...formData, password: encryptData(formData.password) };
       await registerUser(encryptedData);
       toast.success('Registration successful! You can now log in.');
-      navigate('/home'); 
+      navigate('/login'); 
 
     } catch (err) {
       toast.error('An error occurred. Please try again.');

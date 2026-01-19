@@ -89,7 +89,7 @@ const Home: React.FC = () => {
 
       {/* Footer */}
       <footer className="home-footer">
-        <p>© 2024 ShopList. Made with ❤️ for smart shoppers.</p>
+        <p>© 2025 ShopList. Made by Tlholo for smart shoppers.</p>
       </footer>
     </div>
   );

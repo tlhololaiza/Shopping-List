@@ -1,27 +1,5 @@
 {
-  "users": [
-    {
-      "id": "000d",
-      "name": "Tlholo",
-      "surname": "Tshwane",
-      "email": "tshwane1@gmail.com",
-      "password": "U2FsdGVkX1+hmwALXV4zVFIjAxhh8cuS/GxUTLV6g8k="
-    },
-    {
-      "id": "a36c",
-      "name": "Ofentse",
-      "surname": "Tutje",
-      "email": "tsetse@gmail.com",
-      "password": "U2FsdGVkX19184Me077pdPY7tRw3h611cDWVS/jp6Ko="
-    },
-    {
-      "id": "956c",
-      "name": "Bontle",
-      "surname": "Fakude",
-      "email": "BF@gmail.com",
-      "password": "U2FsdGVkX1/TWmiPlvcYVT97PswLOvfxR4agmhSe+tc="
-    }
-  ],
+  "users": [],
   "shoppingLists": [],
   "items": []
 }

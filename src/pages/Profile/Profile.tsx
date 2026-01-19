@@ -123,7 +123,7 @@ const Profile: React.FC = () => {
                   <Input
                     type="text"
                     name="name"
-                    placeholder="John"
+                    placeholder="Name"
                     value={formData.name || ''}
                     onChange={handleChange}
                   />
@@ -136,7 +136,7 @@ const Profile: React.FC = () => {
                   <Input
                     type="text"
                     name="surname"
-                    placeholder="Doe"
+                    placeholder="Surname"
                     value={formData.surname || ''}
                     onChange={handleChange}
                   />
@@ -149,7 +149,7 @@ const Profile: React.FC = () => {
                   <Input
                     type="email"
                     name="email"
-                    placeholder="you@example.com"
+                    placeholder="your@mail.com"
                     value={formData.email || ''}
                     onChange={handleChange}
                   />

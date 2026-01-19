@@ -772,7 +772,7 @@ const ShoppingLists: React.FC = () => {
                       Items ({sortedItems.length}) - Sorted by {getSortDisplayText(sortKey)}
                     </h4>
                     {sortedItems.length > 0 ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
                         {sortedItems.map((item) => (
                           <div key={item.id} className="item-card" style={{
                             border: editingItemId === item.id ? '2px solid #6366f1' : '1px solid #e5e7eb',
@@ -987,32 +987,37 @@ const ShoppingLists: React.FC = () => {
                   
                   {addItemFormVisibleListId === list.id ? (
                     <div className="add-item-form-container" style={{
-                      backgroundColor: '#f0f4ff',
+                      backgroundColor: '#ffffff',
                       padding: '24px',
-                      borderRadius: '8px',
-                      border: '2px solid #6366f1',
-                      marginTop: '20px'
+                      borderRadius: '10px',
+                      border: '1px solid #e5e7eb',
+                      marginTop: '20px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h4 style={{ margin: 0, color: '#1f2937', fontSize: '16px', fontWeight: '600' }}>Add a new item to this list</h4>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h4 style={{ margin: 0, color: '#1f2937', fontSize: '18px', fontWeight: '600', fontFamily: 'Poppins, sans-serif' }}>Add a new item to this list</h4>
                         <button
                           onClick={() => setAddItemFormVisibleListId(null)}
                           style={{
-                            padding: '4px 12px',
-                            backgroundColor: '#9ca3af',
+                            padding: '6px 14px',
+                            backgroundColor: '#6b7280',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '4px',
+                            borderRadius: '6px',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: '600'
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            fontFamily: 'Poppins, sans-serif',
+                            transition: 'background-color 0.2s'
                           }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
                         >
                           Cancel
                         </button>
                       </div>
                       <form onSubmit={(e) => { e.preventDefault(); handleAddItem(list.id); }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                           <Input
                             type="text"
                             name="name"
@@ -1044,7 +1049,7 @@ const ShoppingLists: React.FC = () => {
                             onChange={(e) => handleItemFormChange(e, list.id)}
                           />
                         </div>
-                        <div style={{ marginBottom: '10px' }}>
+                        <div style={{ marginBottom: '12px' }}>
                           <Input
                             type="text"
                             name="notes"
@@ -1055,7 +1060,7 @@ const ShoppingLists: React.FC = () => {
                         </div>
                         
                         {formData.image && !isValidImageUrl(formData.image) && (
-                          <p style={{ color: '#dc3545', fontSize: '14px', margin: '8px 0' }}>
+                          <p style={{ color: '#dc3545', fontSize: '14px', margin: '8px 0', fontFamily: 'Poppins, sans-serif' }}>
                             Please enter a valid image URL (must start with http/https and end with a valid image extension)
                           </p>
                         )}
@@ -1064,20 +1069,23 @@ const ShoppingLists: React.FC = () => {
                           <ImagePreview url={formData.image} />
                         )}
                         
-                        <div className="form-actions" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                        <div className="form-actions" style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
                           <Button
                             type="submit"
                             disabled={!formData.name.trim() || (formData.image && !isValidImageUrl(formData.image))}
                             style={{
-                              padding: '10px 20px',
+                              padding: '12px 24px',
                               backgroundColor: '#10b981',
                               color: 'white',
                               border: 'none',
-                              borderRadius: '6px',
+                              borderRadius: '8px',
                               cursor: 'pointer',
-                              fontSize: '14px',
+                              fontSize: '15px',
                               fontWeight: '600',
-                              flex: 1
+                              fontFamily: 'Poppins, sans-serif',
+                              flex: 1,
+                              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+                              transition: 'background-color 0.2s'
                             }}
                           >
                             Add Item
@@ -1086,15 +1094,17 @@ const ShoppingLists: React.FC = () => {
                             type="button"
                             onClick={() => setAddItemFormVisibleListId(null)}
                             style={{
-                              padding: '10px 20px',
-                              backgroundColor: '#9ca3af',
+                              padding: '12px 24px',
+                              backgroundColor: '#6b7280',
                               color: 'white',
                               border: 'none',
-                              borderRadius: '6px',
+                              borderRadius: '8px',
                               cursor: 'pointer',
-                              fontSize: '14px',
+                              fontSize: '15px',
                               fontWeight: '600',
-                              flex: 1
+                              fontFamily: 'Poppins, sans-serif',
+                              flex: 1,
+                              transition: 'background-color 0.2s'
                             }}
                           >
                             Cancel
