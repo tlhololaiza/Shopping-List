@@ -1,4 +1,5 @@
 import React from 'react';
+import { Search } from 'lucide-react';
 import './SearchBar.css';
 
 interface SearchBarProps {
@@ -11,13 +12,13 @@ interface SearchBarProps {
 const getSortDisplayText = (sortKey: string): string => {
   switch (sortKey) {
     case 'date':
-      return '🗓️ Sort by Date Added';
+      return 'Sort by Date Added';
     case 'name':
-      return '🔤 Sort by Name';
+      return 'Sort by Name';
     case 'category':
-      return '📁 Sort by Category';
+      return 'Sort by Category';
     default:
-      return '🗓️ Sort by Date Added';
+      return 'Sort by Date Added';
   }
 };
 
@@ -67,16 +68,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
           }}
         />
         <span
+          aria-hidden="true"
           style={{
             position: 'absolute',
-            left: '16px',
+            left: '14px',
             top: '50%',
             transform: 'translateY(-50%)',
-            fontSize: '18px',
             pointerEvents: 'none',
+            color: '#6b7280',
           }}
         >
-          🔍
+          <Search size={18} />
         </span>
       </div>
 

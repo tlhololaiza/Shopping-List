@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../../redux/hooks';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, ListChecks, CheckCircle, Search, ShieldCheck, NotebookPen, UserCog, Sparkles } from 'lucide-react';
 import './Home.css';
 
 const Home: React.FC = () => {
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   return (
     <div className="home-page">
@@ -15,6 +15,11 @@ const Home: React.FC = () => {
           <div className="hero-icon">
             <ShoppingCart size={48} />
           </div>
+          {isAuthenticated && user ? (
+            <p className="hero-subtitle" style={{ marginBottom: '8px', fontWeight: 600 }}>
+              Welcome back, {user.name}!
+            </p>
+          ) : null}
           <h1 className="hero-title">
             Shopping made <span className="highlight">simple</span>
           </h1>
@@ -24,14 +29,59 @@ const Home: React.FC = () => {
           </p>
           <div className="hero-buttons">
             <Link to={isAuthenticated ? "/shopping-lists" : "/register"} className="btn-primary">
-              Get Started Free →
+              {isAuthenticated ? 'Go to your lists →' : 'Get Started Free →'}
             </Link>
-            <Link to="/login" className="btn-secondary">
-              Sign In
-            </Link>
+            {!isAuthenticated && (
+              <Link to="/login" className="btn-secondary">
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </section>
+
+      {isAuthenticated && user && (
+        <section className="features-section" style={{ paddingTop: '24px' }}>
+          <div className="features-header">
+            <h2 className="features-title">Welcome, {user.name}</h2>
+            <p className="features-subtitle">
+              Pick up where you left off or tune your preferences.
+            </p>
+          </div>
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon" aria-hidden="true"><NotebookPen size={22} /></div>
+              <h3 className="feature-title">Your shopping lists</h3>
+              <p className="feature-description">
+                View and manage all your lists in one place.
+              </p>
+              <Link to="/shopping-lists" className="btn-secondary" style={{ display: 'inline-block', marginTop: '8px' }}>
+                Open lists
+              </Link>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon" aria-hidden="true"><UserCog size={22} /></div>
+              <h3 className="feature-title">Profile & settings</h3>
+              <p className="feature-description">
+                Update your name, email, and password anytime.
+              </p>
+              <Link to="/profile" className="btn-secondary" style={{ display: 'inline-block', marginTop: '8px' }}>
+                Edit profile
+              </Link>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon" aria-hidden="true"><Sparkles size={22} /></div>
+              <h3 className="feature-title">Keep things tidy</h3>
+              <p className="feature-description">
+                Archive old lists and stay focused on what matters now.
+              </p>
+              <Link to="/shopping-lists" className="btn-secondary" style={{ display: 'inline-block', marginTop: '8px' }}>
+                Manage now
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="features-section">
@@ -43,28 +93,28 @@ const Home: React.FC = () => {
         </div>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">☰</div>
+            <div className="feature-icon" aria-hidden="true"><ListChecks size={22} /></div>
             <h3 className="feature-title">Multiple Lists</h3>
             <p className="feature-description">
               Create and manage multiple shopping lists for different occasions.
             </p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">✓</div>
+            <div className="feature-icon" aria-hidden="true"><CheckCircle size={22} /></div>
             <h3 className="feature-title">Track Progress</h3>
             <p className="feature-description">
               Mark items as complete and see your shopping progress at a glance.
             </p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">🔍</div>
+            <div className="feature-icon" aria-hidden="true"><Search size={22} /></div>
             <h3 className="feature-title">Quick Search</h3>
             <p className="feature-description">
               Find items instantly with powerful search and filtering.
             </p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">🛡️</div>
+            <div className="feature-icon" aria-hidden="true"><ShieldCheck size={22} /></div>
             <h3 className="feature-title">Secure & Private</h3>
             <p className="feature-description">
               Your data is encrypted and only accessible by you.
@@ -80,9 +130,15 @@ const Home: React.FC = () => {
           <p className="cta-subtitle">
             Join thousands of users who are already shopping smarter.
           </p>
-          <Link to="/register" className="btn-cta">
-            Create Free Account
-          </Link>
+          {!isAuthenticated ? (
+            <Link to="/register" className="btn-cta">
+              Create Free Account
+            </Link>
+          ) : (
+            <Link to="/shopping-lists" className="btn-cta">
+              Go to my lists
+            </Link>
+          )}
         </div>
       </section>
 

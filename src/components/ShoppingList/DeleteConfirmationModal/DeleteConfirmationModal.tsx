@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle } from 'lucide-react';
 import Button from '../../Button/Button';
 import './DeleteConfirmationModal.css';
 
@@ -25,7 +26,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <span className="modal-icon">⚠️</span>
+          <span className="modal-icon" aria-hidden="true"><AlertTriangle size={22} /></span>
           <h3>{title}</h3>
         </div>
         <p className="modal-message">{message}</p>

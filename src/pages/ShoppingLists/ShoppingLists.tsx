@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
+import { Search as SearchIcon, CalendarRange } from 'lucide-react';
 import {
   setShoppingLists,
   addShoppingList,
@@ -497,8 +498,8 @@ const ShoppingLists: React.FC = () => {
                         borderTop: '1px solid #e5e7eb',
                       }}
                     >
-                      <p style={{ margin: '0', fontSize: '12px', color: '#9ca3af' }}>
-                        📅{' '}
+                      <p style={{ margin: '0', fontSize: '12px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CalendarRange size={14} aria-hidden="true" />
                         {new Date(item.dateAdded).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -532,7 +533,9 @@ const ShoppingLists: React.FC = () => {
                 border: '1px solid #e5e7eb',
               }}
             >
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+              <div style={{ fontSize: '48px', marginBottom: '16px', display: 'flex', justifyContent: 'center', color: '#6b7280' }}>
+                <SearchIcon size={48} aria-hidden="true" />
+              </div>
               <h3 style={{ margin: '0 0 8px 0', color: '#1f2937', fontSize: '16px', fontWeight: '600' }}>
                 No items found
               </h3>
